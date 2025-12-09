@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>座號評價查詢系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        label {
+            font-size: 1.2em;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input[type="number"], input[type="password"] {
+            padding: 12px 20px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            width: 150px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus, input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .result-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .rating-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .rating-card h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .rating-value {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .rating-detail {
+            font-size: 1.1em;
+            margin-top: 10px;
+        }
+
+        .comment-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #ffc107;
+            margin-top: 20px;
+        }
+
+        .comment-section h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .comment-text {
+            color: #856404;
+            font-size: 1.2em;
+            line-height: 1.6;
+        }
+
+        .ranking-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .ranking-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+
+        .ranking-group {
+            margin-bottom: 30px;
+        }
+
+        .ranking-group h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .ranking-item.top {
+            border-left: 5px solid #28a745;
+        }
+
+        .ranking-item.bottom {
+            border-left: 5px solid #dc3545;
+        }
+
+        .ranking-number {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #667eea;
+            min-width: 80px;
+        }
+
+        .ranking-rating {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #dc3545;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .admin-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .admin-link a:hover {
+            text-decoration: underline;
+        }
+
+        .password-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 座號評價查詢系統</h1>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <label for="seatNumber">輸入座號：</label>
+                <input type="number" id="seatNumber" min="25" max="46" placeholder="25-46">
+                <button onclick="queryRating()">查詢評價</button>
+            </div>
+            
+            <div class="password-section" id="passwordSection" style="display: none;">
+                <div class="input-group">
+                    <label for="viewPassword">查看銳評密碼：</label>
+                    <input type="password" id="viewPassword" placeholder="輸入密碼">
+                    <button onclick="viewComment()">查看銳評</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <div class="result-section" id="resultSection">
+            <div class="rating-card">
+                <h2>座號 <span id="displaySeatNumber"></span> 的評價</h2>
+                <div class="rating-value" id="ratingValue">-</div>
+                <div class="rating-detail" id="ratingDetail">-</div>
+            </div>
+
+            <div class="comment-section hidden" id="commentSection">
+                <h3>📝 銳評</h3>
+                <div class="comment-text" id="commentText">-</div>
+            </div>
+        </div>
+
+        <div class="ranking-section" id="rankingSection">
+            <h2>📊 評價排行榜</h2>
+            
+            <div class="ranking-group">
+                <h3>🏆 最高評價 Top 3</h3>
+                <div id="topRankings"></div>
+            </div>
+
+            <div class="ranking-group">
+                <h3>📉 最低評價 Bottom 3</h3>
+                <div id="bottomRankings"></div>
+            </div>
+        </div>
+
+        <div class="admin-link">
+            <a href="admin.html">管理員入口</a>
+        </div>
+    </div>
+
+    <script>
+        let ratingsData = null;
+        let currentPassword = localStorage.getItem('viewPassword') || '';
+        const ADMIN_PASSWORD = 'RAN+';
+
+        // Load CSV data
+        async function loadData() {
+            try {
+                const response = await fetch('data.csv');
+                const text = await response.text();
+                parseCSV(text);
+                displayRankings();
+            } catch (error) {
+                showError('無法載入資料檔案');
+            }
+        }
+
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',');
+            
+            ratingsData = {};
+            
+            // Parse seat numbers (starting from column 1)
+            for (let i = 1; i < headers.length; i++) {
+                const seatNum = headers[i].replace('號', '');
+                ratingsData[seatNum] = {
+                    ratings: [],
+                    comment: ''
+                };
+            }
+
+            // Parse ratings (rows 1-10)
+            for (let i = 1; i <= 10; i++) {
+                const values = lines[i].split(',');
+                for (let j = 1; j < values.length; j++) {
+                    const seatNum = headers[j].replace('號', '');
+                    ratingsData[seatNum].ratings.push(parseInt(values[j]));
+                }
+            }
+
+            // Parse comments (row 11)
+            const commentLine = lines[11].split(',');
+            for (let j = 1; j < commentLine.length; j++) {
+                const seatNum = headers[j].replace('號', '');
+                ratingsData[seatNum].comment = commentLine[j];
+            }
+        }
+
+        function calculateAverage(ratings) {
+            const sum = ratings.reduce((a, b) => a + b, 0);
+            const avg = sum / ratings.length;
+            
+            // Convert to rating: 0=X, 1=A, 2=S, 3=L
+            if (avg >= 2.5) return 'L';
+            if (avg >= 1.5) return 'S';
+            if (avg >= 0.5) return 'A';
+            return 'X';
+        }
+
+        function checkDailyLimit(seatNumber) {
+            const queryKey = `query_lifetime`;
+            const hasQueried = localStorage.getItem(queryKey);
+            
+            if (hasQueried) {
+                return false;
+            }
+            
+            localStorage.setItem(queryKey, 'true');
+            return true;
+        }
+
+        function queryRating() {
+            const seatNumber = document.getElementById('seatNumber').value;
+            
+            if (!seatNumber || seatNumber < 25 || seatNumber > 46) {
+                showError('請輸入有效的座號 (25-46)');
+                return;
+            }
+
+            if (!ratingsData || !ratingsData[seatNumber]) {
+                showError('找不到該座號的資料');
+                return;
+            }
+
+            if (!checkDailyLimit(seatNumber)) {
+                showError('您已經查詢過了，每個瀏覽器只能查詢一次！');
+                return;
+            }
+
+            const data = ratingsData[seatNumber];
+            const rating = calculateAverage(data.ratings);
+            const avgValue = (data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length).toFixed(2);
+
+            document.getElementById('displaySeatNumber').textContent = seatNumber;
+            document.getElementById('ratingValue').textContent = rating;
+            document.getElementById('ratingDetail').textContent = `平均分數: ${avgValue}`;
+            
+            document.getElementById('resultSection').style.display = 'block';
+            document.getElementById('passwordSection').style.display = 'block';
+            document.getElementById('commentSection').classList.add('hidden');
+            
+            hideMessages();
+            showSuccess('查詢成功！');
+        }
+
+        function viewComment() {
+            const password = document.getElementById('viewPassword').value;
+            
+            if (!currentPassword) {
+                showError('尚未設定查看密碼，請聯絡管理員');
+                return;
+            }
+
+            if (password !== currentPassword) {
+                showError('密碼錯誤！');
+                return;
+            }
+
+            const seatNumber = document.getElementById('seatNumber').value;
+            const data = ratingsData[seatNumber];
+            
+            document.getElementById('commentText').textContent = data.comment;
+            document.getElementById('commentSection').classList.remove('hidden');
+            
+            hideMessages();
+            showSuccess('銳評已顯示！');
+        }
+
+        function displayRankings() {
+            if (!ratingsData) return;
+
+            const rankings = [];
+            for (const [seatNum, data] of Object.entries(ratingsData)) {
+                const rating = calculateAverage(data.ratings);
+                const avgValue = data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length;
+                rankings.push({
+                    seatNum: seatNum,
+                    rating: rating,
+                    avgValue: avgValue
+                });
+            }
+
+            // Sort by avgValue
+            rankings.sort((a, b) => b.avgValue - a.avgValue);
+
+            // Top 3
+            const topRankingsHTML = rankings.slice(0, 3).map((item, index) => `
+                <div class="ranking-item top">
+                    <span class="ranking-number">${index + 1}. 座號 ${item.seatNum}</span>
+                    <span class="ranking-rating">${item.rating}</span>
+                </div>
+            `).join('');
+
+            // Bottom 3
+            const bottomRankingsHTML = rankings.slice(-3).reverse().map((item, index) => `
+                <div class="ranking-item bottom">
+                    <span class="ranking-number">${rankings.length - index}. 座號 ${item.seatNum}</span>
+                    <span class="ranking-rating">${item.rating}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('topRankings').innerHTML = topRankingsHTML;
+            document.getElementById('bottomRankings').innerHTML = bottomRankingsHTML;
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 3000);
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // Load data on page load
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
