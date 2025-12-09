@@ -118,6 +118,7 @@
         .rating-detail {
             font-size: 1.1em;
             margin-top: 10px;
+            white-space: pre-line;
         }
 
         .comment-section {
@@ -392,6 +393,26 @@
             return 'X';
         }
 
+        function countRatings(ratings) {
+            // Count how many people gave each rating
+            // 0=X, 1=A, 2=S, 3=L
+            const counts = {
+                'X': 0,
+                'A': 0,
+                'S': 0,
+                'L': 0
+            };
+            
+            ratings.forEach(rating => {
+                if (rating === 0) counts['X']++;
+                else if (rating === 1) counts['A']++;
+                else if (rating === 2) counts['S']++;
+                else if (rating === 3) counts['L']++;
+            });
+            
+            return counts;
+        }
+
         function checkDailyLimit(seatNumber) {
             const queryKey = `query_lifetime`;
             const hasQueried = localStorage.getItem(queryKey);
@@ -425,10 +446,11 @@
             const data = ratingsData[seatNumber];
             const rating = calculateAverage(data.ratings);
             const avgValue = (data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length).toFixed(2);
+            const counts = countRatings(data.ratings);
 
             document.getElementById('displaySeatNumber').textContent = seatNumber;
             document.getElementById('ratingValue').textContent = rating;
-            document.getElementById('ratingDetail').textContent = `平均分數: ${avgValue}`;
+            document.getElementById('ratingDetail').textContent = `平均分數: ${avgValue}\n${counts.L}個人評L，${counts.S}個人評S，${counts.A}個人評A，${counts.X}個人評X`;
             
             document.getElementById('resultSection').style.display = 'block';
             document.getElementById('passwordSection').style.display = 'block';
