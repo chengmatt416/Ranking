@@ -10,9 +10,9 @@ The Ranking.xlsx format has:
 
 The data.csv format needs:
 - Row 1: Header with seat numbers (評價者,25號,26號,...)
-- Rows 2-11: Evaluators with ratings for each seat
-- Row 12: Comments for each seat (銳評)
-- Row 13: Password (密碼)
+- Rows 2-N: Dynamic number of evaluators with ratings for each seat
+- Second to last row: Comments for each seat (銳評)
+- Last row: Password (密碼)
 """
 
 from openpyxl import load_workbook
@@ -65,6 +65,10 @@ def convert_xlsx_to_csv(xlsx_file='Ranking.xlsx', csv_file='data.csv'):
     
     # Header row
     seat_numbers = sorted(seats_data.keys())
+    if not seat_numbers:
+        print('Error: No seat data found in the Excel file')
+        return
+        
     header_line = '評價者,' + ','.join([f'{seat}號' for seat in seat_numbers])
     csv_lines.append(header_line)
     
@@ -74,8 +78,16 @@ def convert_xlsx_to_csv(xlsx_file='Ranking.xlsx', csv_file='data.csv'):
     # Rating rows (transpose the data)
     for i in range(num_evaluators):
         evaluator_name = f'評價者{i+1}'
-        ratings = [str(int(seats_data[seat]['ratings'][i])) if i < len(seats_data[seat]['ratings']) else '0' 
-                   for seat in seat_numbers]
+        ratings = []
+        for seat in seat_numbers:
+            if i < len(seats_data[seat]['ratings']):
+                try:
+                    rating_value = int(seats_data[seat]['ratings'][i])
+                    ratings.append(str(rating_value))
+                except (ValueError, TypeError):
+                    ratings.append('0')
+            else:
+                ratings.append('0')
         csv_lines.append(evaluator_name + ',' + ','.join(ratings))
     
     # Comments row
