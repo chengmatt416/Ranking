@@ -341,10 +341,11 @@
             
             for (let i = 1; i < endRow; i++) {
                 const values = lines[i].split(',');
-                const seatNum = values[0];
+                const seatNumStr = values[0];
+                const seatNum = parseInt(seatNumStr);
                 
                 // Skip if not a valid seat number (25-46)
-                if (!seatNum || isNaN(seatNum) || parseInt(seatNum) < 25 || parseInt(seatNum) > 46) continue;
+                if (isNaN(seatNum) || seatNum < 25 || seatNum > 46) continue;
                 
                 ratingsData[seatNum] = {
                     ratings: [],
@@ -353,7 +354,8 @@
                 
                 // Parse ratings from each evaluator (columns 1 onwards)
                 for (let j = 1; j < values.length; j++) {
-                    ratingsData[seatNum].ratings.push(parseInt(values[j]) || 0);
+                    const rating = parseInt(values[j]);
+                    ratingsData[seatNum].ratings.push(isNaN(rating) ? 0 : rating);
                 }
             }
 
