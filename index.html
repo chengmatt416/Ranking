@@ -343,8 +343,8 @@
                 const values = lines[i].split(',');
                 const seatNum = values[0];
                 
-                // Skip if not a valid seat number
-                if (!seatNum || isNaN(seatNum)) continue;
+                // Skip if not a valid seat number (25-46)
+                if (!seatNum || isNaN(seatNum) || parseInt(seatNum) < 25 || parseInt(seatNum) > 46) continue;
                 
                 ratingsData[seatNum] = {
                     ratings: [],
