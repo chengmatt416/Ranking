@@ -231,8 +231,10 @@
                 <p>
                     1. 點擊「自動生成密碼」可生成隨機密碼<br>
                     2. 或手動輸入密碼後點擊「設定密碼」<br>
-                    3. 設定的密碼將用於查看銳評功能<br>
-                    4. 將密碼分享給需要查看銳評的使用者
+                    3. 系統會自動下載新的 data.csv 檔案<br>
+                    4. 請將下載的 data.csv 檔案替換原有的檔案<br>
+                    5. 密碼將在所有裝置上同步生效<br>
+                    6. 將密碼分享給需要查看銳評的使用者
                 </p>
             </div>
 
@@ -247,6 +249,30 @@
     <script>
         const ADMIN_PASSWORD = 'RAN+';
         let isLoggedIn = false;
+        let csvData = null;
+        let currentPassword = '';
+
+        // Load CSV data
+        async function loadCSVData() {
+            try {
+                const response = await fetch('data.csv');
+                const text = await response.text();
+                csvData = text;
+                parsePassword(text);
+            } catch (error) {
+                console.error('無法載入資料檔案');
+            }
+        }
+
+        function parsePassword(text) {
+            const lines = text.trim().split('\n');
+            if (lines.length > 12) {
+                const passwordLine = lines[12].split(',');
+                if (passwordLine[0] === '密碼' && passwordLine[1]) {
+                    currentPassword = passwordLine[1];
+                }
+            }
+        }
 
         function login() {
             const password = document.getElementById('adminPassword').value;
@@ -285,15 +311,44 @@
                 return;
             }
 
-            localStorage.setItem('viewPassword', newPassword);
+            // Update CSV data with new password
+            const lines = csvData.trim().split('\n');
+            
+            // Check if password row exists (row 13, index 12)
+            if (lines.length > 12 && lines[12] && lines[12].startsWith('密碼,')) {
+                lines[12] = '密碼,' + newPassword;
+            } else {
+                // Add password row if it doesn't exist
+                lines.push('密碼,' + newPassword);
+            }
+            
+            csvData = lines.join('\n');
+            currentPassword = newPassword;
+            
+            // Create download link
+            downloadCSV(csvData);
+            
             loadCurrentPassword();
-            showSuccess('密碼設定成功！');
+            showSuccess('密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
             document.getElementById('newPassword').value = '';
         }
 
+        function downloadCSV(content) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'data.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         function loadCurrentPassword() {
-            const currentPassword = localStorage.getItem('viewPassword');
-            if (currentPassword) {
+            if (currentPassword && currentPassword !== 'PASSWORD_PLACEHOLDER') {
                 document.getElementById('currentPasswordValue').textContent = currentPassword;
                 document.getElementById('currentPasswordDisplay').style.display = 'block';
             } else {
@@ -312,13 +367,14 @@
             const successDiv = document.getElementById('successMessage');
             successDiv.textContent = message;
             successDiv.style.display = 'block';
-            setTimeout(() => successDiv.style.display = 'none', 3000);
+            setTimeout(() => successDiv.style.display = 'none', 5000);
         }
 
         // Check if already logged in (session)
         window.addEventListener('DOMContentLoaded', () => {
             // Clear login state on page load for security
             isLoggedIn = false;
+            loadCSVData();
         });
     </script>
 </body>

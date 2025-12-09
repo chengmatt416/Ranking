@@ -299,7 +299,7 @@
 
     <script>
         let ratingsData = null;
-        let currentPassword = localStorage.getItem('viewPassword') || '';
+        let currentPassword = '';
         const ADMIN_PASSWORD = 'RAN+';
 
         // Load CSV data
@@ -343,6 +343,14 @@
             for (let j = 1; j < commentLine.length; j++) {
                 const seatNum = headers[j].replace('號', '');
                 ratingsData[seatNum].comment = commentLine[j];
+            }
+
+            // Parse password (row 13, index 12)
+            if (lines.length > 12) {
+                const passwordLine = lines[12].split(',');
+                if (passwordLine[0] === '密碼' && passwordLine[1]) {
+                    currentPassword = passwordLine[1];
+                }
             }
         }
 
