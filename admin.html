@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員頁面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #f5576c;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .login-section {
+            display: block;
+        }
+
+        .admin-panel {
+            display: none;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-size: 1.1em;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="password"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            background: #f5576c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #e04656;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        button.secondary:hover {
+            background: #5a6268;
+        }
+
+        .password-display {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .password-display h3 {
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .password-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #28a745;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #dc3545;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .info-box h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #0c5460;
+            line-height: 1.6;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #f5576c;
+            text-decoration: none;
+            font-size: 1em;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .generate-btn {
+            background: #28a745;
+        }
+
+        .generate-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 管理員頁面</h1>
+        
+        <div class="login-section" id="loginSection">
+            <div class="error-message" id="loginError"></div>
+            
+            <div class="input-group">
+                <label for="adminPassword">管理員密碼：</label>
+                <input type="password" id="adminPassword" placeholder="輸入管理員密碼">
+            </div>
+            
+            <button onclick="login()">登入</button>
+            
+            <div class="back-link">
+                <a href="index.html">← 返回主頁</a>
+            </div>
+        </div>
+
+        <div class="admin-panel" id="adminPanel">
+            <div class="success-message" id="successMessage"></div>
+            
+            <div class="input-group">
+                <label for="newPassword">生成新的查看密碼：</label>
+                <input type="text" id="newPassword" placeholder="輸入新密碼或自動生成">
+            </div>
+            
+            <button class="generate-btn" onclick="generatePassword()">自動生成密碼</button>
+            <button onclick="setPassword()">設定密碼</button>
+            
+            <div class="password-display" id="currentPasswordDisplay" style="display: none;">
+                <h3>當前查看密碼</h3>
+                <div class="password-value" id="currentPasswordValue">-</div>
+            </div>
+
+            <div class="info-box">
+                <h4>📋 使用說明</h4>
+                <p>
+                    1. 點擊「自動生成密碼」可生成隨機密碼<br>
+                    2. 或手動輸入密碼後點擊「設定密碼」<br>
+                    3. 設定的密碼將用於查看銳評功能<br>
+                    4. 將密碼分享給需要查看銳評的使用者
+                </p>
+            </div>
+
+            <button class="secondary" onclick="logout()">登出</button>
+            
+            <div class="back-link">
+                <a href="index.html">← 返回主頁</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_PASSWORD = 'RAN+';
+        let isLoggedIn = false;
+
+        function login() {
+            const password = document.getElementById('adminPassword').value;
+            
+            if (password === ADMIN_PASSWORD) {
+                isLoggedIn = true;
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                loadCurrentPassword();
+            } else {
+                showLoginError('管理員密碼錯誤！');
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        function generatePassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let password = '';
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('newPassword').value = password;
+        }
+
+        function setPassword() {
+            const newPassword = document.getElementById('newPassword').value;
+            
+            if (!newPassword || newPassword.trim() === '') {
+                alert('請輸入密碼或點擊自動生成！');
+                return;
+            }
+
+            localStorage.setItem('viewPassword', newPassword);
+            loadCurrentPassword();
+            showSuccess('密碼設定成功！');
+            document.getElementById('newPassword').value = '';
+        }
+
+        function loadCurrentPassword() {
+            const currentPassword = localStorage.getItem('viewPassword');
+            if (currentPassword) {
+                document.getElementById('currentPasswordValue').textContent = currentPassword;
+                document.getElementById('currentPasswordDisplay').style.display = 'block';
+            } else {
+                document.getElementById('currentPasswordDisplay').style.display = 'none';
+            }
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => successDiv.style.display = 'none', 3000);
+        }
+
+        // Check if already logged in (session)
+        window.addEventListener('DOMContentLoaded', () => {
+            // Clear login state on page load for security
+            isLoggedIn = false;
+        });
+    </script>
+</body>
+</html>
