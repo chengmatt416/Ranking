@@ -249,7 +249,7 @@
         <div class="input-section">
             <div class="input-group">
                 <label for="seatNumber">輸入座號：</label>
-                <input type="number" id="seatNumber" min="25" max="34" placeholder="25-34">
+                <input type="number" id="seatNumber" min="25" max="46" placeholder="25-46">
                 <button onclick="queryRating()">查詢評價</button>
             </div>
             
@@ -358,8 +358,7 @@
         }
 
         function checkDailyLimit(seatNumber) {
-            const today = new Date().toDateString();
-            const queryKey = `query_${seatNumber}_${today}`;
+            const queryKey = `query_lifetime`;
             const hasQueried = localStorage.getItem(queryKey);
             
             if (hasQueried) {
@@ -373,8 +372,8 @@
         function queryRating() {
             const seatNumber = document.getElementById('seatNumber').value;
             
-            if (!seatNumber || seatNumber < 25 || seatNumber > 34) {
-                showError('請輸入有效的座號 (25-34)');
+            if (!seatNumber || seatNumber < 25 || seatNumber > 46) {
+                showError('請輸入有效的座號 (25-46)');
                 return;
             }
 
@@ -384,7 +383,7 @@
             }
 
             if (!checkDailyLimit(seatNumber)) {
-                showError('您今天已經查詢過此座號了！');
+                showError('您已經查詢過了，每個瀏覽器只能查詢一次！');
                 return;
             }
 
