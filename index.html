@@ -320,45 +320,60 @@
             
             ratingsData = {};
             
-            // Parse seat numbers (starting from column 1)
-            for (let i = 1; i < headers.length; i++) {
-                const seatNum = headers[i].replace('號', '');
+            // Current format: rows are seat numbers, columns are evaluators
+            // Header row: 評價者,19,18,14,1,5,10,21,3,7,6,20,13 (evaluator seat numbers)
+            // Data rows: seat_number,rating1,rating2,rating3...
+            
+            // Find where seat data ends (before 銳評 or 密碼)
+            let commentRowIndex = -1;
+            let passwordRowIndex = -1;
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].startsWith('銳評')) {
+                    commentRowIndex = i;
+                } else if (lines[i].startsWith('密碼')) {
+                    passwordRowIndex = i;
+                }
+            }
+            
+            // Parse seat data rows (from row 1 until 銳評)
+            const endRow = commentRowIndex > 0 ? commentRowIndex : lines.length;
+            
+            for (let i = 1; i < endRow; i++) {
+                const values = lines[i].split(',');
+                const seatNum = values[0];
+                
+                // Skip if not a valid seat number
+                if (!seatNum || isNaN(seatNum)) continue;
+                
                 ratingsData[seatNum] = {
                     ratings: [],
                     comment: ''
                 };
-            }
-
-            // Parse ratings (rows 1-10, but we have 12 evaluators now)
-            // Find the number of evaluator rows (until we hit 銳評)
-            let numEvaluators = 0;
-            for (let i = 1; i < lines.length; i++) {
-                if (lines[i].startsWith('銳評')) {
-                    break;
-                }
-                numEvaluators++;
-            }
-
-            // Parse all evaluator ratings
-            for (let i = 1; i <= numEvaluators; i++) {
-                const values = lines[i].split(',');
+                
+                // Parse ratings from each evaluator (columns 1 onwards)
                 for (let j = 1; j < values.length; j++) {
-                    const seatNum = headers[j].replace('號', '');
-                    ratingsData[seatNum].ratings.push(parseInt(values[j]));
+                    ratingsData[seatNum].ratings.push(parseInt(values[j]) || 0);
                 }
             }
 
-            // Parse comments (row after all evaluators)
-            const commentLine = lines[numEvaluators + 1].split(',');
-            for (let j = 1; j < commentLine.length; j++) {
-                const seatNum = headers[j].replace('號', '');
-                ratingsData[seatNum].comment = commentLine[j];
+            // Parse comments row if exists
+            if (commentRowIndex > 0) {
+                const commentLine = lines[commentRowIndex].split(',');
+                // Match comments to seat numbers by position
+                let seatIndex = 0;
+                const seatNums = Object.keys(ratingsData).sort((a, b) => parseInt(a) - parseInt(b));
+                
+                for (let j = 1; j < commentLine.length && seatIndex < seatNums.length; j++) {
+                    ratingsData[seatNums[seatIndex]].comment = commentLine[j] || '';
+                    seatIndex++;
+                }
             }
 
-            // Parse password (row after comments)
-            if (lines.length > numEvaluators + 2) {
-                const passwordLine = lines[numEvaluators + 2].split(',');
-                if (passwordLine[0] === '密碼' && passwordLine[1]) {
+            // Parse password row if exists
+            if (passwordRowIndex > 0) {
+                const passwordLine = lines[passwordRowIndex].split(',');
+                if (passwordLine[1]) {
                     currentPassword = passwordLine[1];
                 }
             }
