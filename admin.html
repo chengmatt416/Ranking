@@ -234,7 +234,8 @@
                     3. 系統會自動下載新的 data.csv 檔案<br>
                     4. 請將下載的 data.csv 檔案替換原有的檔案<br>
                     5. 密碼將在所有裝置上同步生效<br>
-                    6. 將密碼分享給需要查看銳評的使用者
+                    6. 將密碼分享給需要查看銳評的使用者<br>
+                    7. 注意：如修改了 Ranking.xlsx，請運行 convert_xlsx_to_csv.py 轉換
                 </p>
             </div>
 
@@ -266,10 +267,15 @@
 
         function parsePassword(text) {
             const lines = text.trim().split('\n');
-            if (lines.length > 12) {
-                const passwordLine = lines[12].split(',');
-                if (passwordLine[0] === '密碼' && passwordLine[1]) {
-                    currentPassword = passwordLine[1];
+            // Find the password row
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (line.startsWith('密碼,')) {
+                    const parts = line.split(',');
+                    if (parts[1]) {
+                        currentPassword = parts[1];
+                    }
+                    break;
                 }
             }
         }
@@ -314,11 +320,18 @@
             // Update CSV data with new password
             const lines = csvData.trim().split('\n');
             
-            // Check if password row exists (row 13, index 12)
-            if (lines.length > 12 && lines[12] && lines[12].startsWith('密碼,')) {
-                lines[12] = '密碼,' + newPassword;
-            } else {
-                // Add password row if it doesn't exist
+            // Check if password row exists
+            let passwordRowFound = false;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('密碼,')) {
+                    lines[i] = '密碼,' + newPassword;
+                    passwordRowFound = true;
+                    break;
+                }
+            }
+            
+            // If password row doesn't exist, add it
+            if (!passwordRowFound) {
                 lines.push('密碼,' + newPassword);
             }
             
@@ -329,7 +342,7 @@
             downloadCSV(csvData);
             
             loadCurrentPassword();
-            showSuccess('密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
+            showSuccess('密碼已更新！請下載新的 data.csv 檔案並替換原檔案。\n注意：如果您修改了 Ranking.xlsx，請重新運行 convert_xlsx_to_csv.py 轉換腳本。');
             document.getElementById('newPassword').value = '';
         }
 
