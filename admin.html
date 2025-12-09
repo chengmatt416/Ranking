@@ -314,8 +314,8 @@
             // Update CSV data with new password
             const lines = csvData.trim().split('\n');
             
-            // Check if password row exists
-            if (lines.length > 12 && lines[12].startsWith('密碼,')) {
+            // Check if password row exists (row 13, index 12)
+            if (lines.length > 12 && lines[12] && lines[12].startsWith('密碼,')) {
                 lines[12] = '密碼,' + newPassword;
             } else {
                 // Add password row if it doesn't exist

@@ -345,7 +345,7 @@
                 ratingsData[seatNum].comment = commentLine[j];
             }
 
-            // Parse password (row 12)
+            // Parse password (row 13, index 12)
             if (lines.length > 12) {
                 const passwordLine = lines[12].split(',');
                 if (passwordLine[0] === '密碼' && passwordLine[1]) {
