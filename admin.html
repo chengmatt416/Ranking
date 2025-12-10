@@ -589,10 +589,12 @@
             }
             
             const passcode = passcodeBuffer;
+            const callback = passcodeSetupCallback;
+            
             closePasscodeModal();
             
-            if (passcodeSetupCallback) {
-                passcodeSetupCallback(passcode);
+            if (callback) {
+                callback(passcode);
             }
         }
 
