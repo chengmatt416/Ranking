@@ -278,40 +278,58 @@
 
         async function loadExistingData() {
             try {
-                const response = await fetch('data.csv');
+                // Load only comments.csv (editors cannot access ratings data)
+                const response = await fetch('comments.csv');
                 const text = await response.text();
-                currentData = parseDataCSV(text);
+                currentData = parseCommentsCSV(text);
             } catch (error) {
-                showError('無法載入現有資料檔案');
-                throw error;
+                // If comments.csv doesn't exist, initialize empty
+                currentData = {
+                    comments: {}
+                };
+                for (let seat = 25; seat <= 46; seat++) {
+                    currentData.comments[seat] = '';
+                }
             }
         }
 
-        function parseDataCSV(text) {
+        function parseCommentsCSV(text) {
             const lines = text.trim().split('\n');
             
-            // Store all lines for reconstruction
             const data = {
-                lines: lines,
                 comments: {}
             };
             
-            // Find comment row index
-            let commentRowIndex = -1;
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('銳評')) {
-                    commentRowIndex = i;
-                    break;
+            // Skip header row if exists
+            const startRow = lines[0] && lines[0].includes('座號') ? 1 : 0;
+            
+            // Parse comments (format: seat_number,comment)
+            for (let i = startRow; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const commaIndex = line.indexOf(',');
+                if (commaIndex === -1) continue;
+                
+                const seatStr = line.substring(0, commaIndex).trim();
+                const seatNum = parseInt(seatStr);
+                
+                if (isNaN(seatNum) || seatNum < 25 || seatNum > 46) continue;
+                
+                // Extract comment (handle quoted values)
+                let comment = line.substring(commaIndex + 1).trim();
+                if (comment.startsWith('"') && comment.endsWith('"')) {
+                    comment = comment.substring(1, comment.length - 1);
+                    comment = comment.replace(/""/g, '"');
                 }
+                
+                data.comments[seatNum] = comment;
             }
             
-            // Parse existing comments if they exist
-            if (commentRowIndex > 0) {
-                const commentLine = lines[commentRowIndex].split(',');
-                // Comments are in order from seat 25 to 46
-                for (let i = 0; i < 22 && i + 1 < commentLine.length; i++) {
-                    const seatNum = 25 + i;
-                    data.comments[seatNum] = commentLine[i + 1] || '';
+            // Ensure all seats have an entry
+            for (let seat = 25; seat <= 46; seat++) {
+                if (!(seat in data.comments)) {
+                    data.comments[seat] = '';
                 }
             }
             
@@ -432,9 +450,9 @@
             localStorage.setItem('usedCommentCodes', JSON.stringify(usedCodes));
 
             // Download the file
-            downloadFile(fileContent, `comments_editor_${submission.editorSeat}_${Date.now()}.csv`);
+            downloadFile(fileContent, `comments.csv`);
 
-            showSuccess('銳評已提交！檔案已下載，請將檔案提交至 repository。');
+            showSuccess('銳評已提交！檔案 comments.csv 已下載，請將此檔案直接加入到 repository 中替換舊的 comments.csv。');
             
             // Reset form
             setTimeout(() => {
@@ -443,46 +461,17 @@
         }
 
         function generateCommentFile(submission) {
-            // Reconstruct the complete data.csv file
-            const lines = [...currentData.lines];
+            // Generate comments.csv file (simple format: seat,comment)
+            let csvContent = '座號,銳評\n';
             
-            // Find or create the comment row
-            let commentRowIndex = -1;
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('銳評')) {
-                    commentRowIndex = i;
-                    break;
-                }
-            }
-            
-            // Build new comment row
-            let commentRow = '銳評';
             for (let seat = 25; seat <= 46; seat++) {
                 const comment = submission.comments[seat] || '';
-                commentRow += ',' + comment;
+                // Escape quotes in comments
+                const escapedComment = comment.replace(/"/g, '""');
+                csvContent += `${seat},"${escapedComment}"\n`;
             }
             
-            // Update or add comment row
-            if (commentRowIndex >= 0) {
-                lines[commentRowIndex] = commentRow;
-            } else {
-                // Add comment row before password row (if exists)
-                let passwordRowIndex = -1;
-                for (let i = 0; i < lines.length; i++) {
-                    if (lines[i].startsWith('密碼')) {
-                        passwordRowIndex = i;
-                        break;
-                    }
-                }
-                
-                if (passwordRowIndex >= 0) {
-                    lines.splice(passwordRowIndex, 0, commentRow);
-                } else {
-                    lines.push(commentRow);
-                }
-            }
-            
-            return lines.join('\n') + '\n';
+            return csvContent;
         }
 
         function downloadFile(content, filename) {
