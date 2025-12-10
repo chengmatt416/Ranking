@@ -642,6 +642,77 @@
             updatePasscodeDisplay();
         }
 
+        // Shared password decryption
+        async function getSharedPassword(type, passcode) {
+            try {
+                const storageKey = 'shared_' + type + '_password';
+                const passcodeKey = 'passcode_' + type;
+                
+                const encryptedPassword = localStorage.getItem(storageKey);
+                const savedPasscode = localStorage.getItem(passcodeKey);
+                
+                if (!encryptedPassword || !savedPasscode) {
+                    return null;
+                }
+                
+                if (passcode !== savedPasscode) {
+                    return null;
+                }
+                
+                // Decrypt the password
+                const decrypted = await decryptSharedData(encryptedPassword, passcode);
+                return decrypted;
+            } catch (error) {
+                console.error('Error decrypting shared password:', error);
+                return null;
+            }
+        }
+
+        async function decryptSharedData(encryptedBase64, password) {
+            try {
+                const encrypted = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+                
+                const salt = encrypted.slice(0, 16);
+                const iv = encrypted.slice(16, 28);
+                const data = encrypted.slice(28);
+                
+                const encoder = new TextEncoder();
+                const passwordBuffer = encoder.encode(password);
+                
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordBuffer,
+                    'PBKDF2',
+                    false,
+                    ['deriveBits', 'deriveKey']
+                );
+                
+                const key = await crypto.subtle.deriveKey(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['decrypt']
+                );
+                
+                const decryptedData = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: iv },
+                    key,
+                    data
+                );
+                
+                const decoder = new TextDecoder();
+                return decoder.decode(decryptedData);
+            } catch (error) {
+                return null;
+            }
+        }
+
         // Load CSV data
         async function loadData() {
             try {
@@ -876,7 +947,7 @@
             displayRatingResult(seatNumber);
         }
 
-        function queryWithPassword() {
+        async function queryWithPassword() {
             const seatNumber = document.getElementById('seatNumber').value;
             const inputPassword = document.getElementById('queryPasswordInput').value;
             
@@ -894,6 +965,15 @@
                 const savedPasscode = getPasscode('query');
                 if (savedPasscode && inputPassword === savedPasscode) {
                     // Passcode correct, allow query
+                    displayRatingResult(seatNumber);
+                    document.getElementById('queryPasswordInput').value = '';
+                    return;
+                }
+                
+                // Try shared password with passcode
+                const sharedPassword = await getSharedPassword('query', inputPassword);
+                if (sharedPassword && sharedPassword === queryPassword) {
+                    // Shared password correct, allow query
                     displayRatingResult(seatNumber);
                     document.getElementById('queryPasswordInput').value = '';
                     return;
@@ -938,7 +1018,7 @@
             showSuccess('查詢成功！');
         }
 
-        function viewComment() {
+        async function viewComment() {
             const password = document.getElementById('viewPassword').value;
             
             if (!currentPassword) {
@@ -951,6 +1031,22 @@
                 const savedPasscode = getPasscode('comment');
                 if (savedPasscode && password === savedPasscode) {
                     // Passcode correct, show comment
+                    const seatNumber = document.getElementById('seatNumber').value;
+                    const data = ratingsData[seatNumber];
+                    
+                    document.getElementById('commentText').textContent = data.comment;
+                    document.getElementById('commentSection').classList.remove('hidden');
+                    
+                    hideMessages();
+                    showSuccess('銳評已顯示！');
+                    document.getElementById('viewPassword').value = '';
+                    return;
+                }
+                
+                // Try shared password with passcode
+                const sharedPassword = await getSharedPassword('comment', password);
+                if (sharedPassword && sharedPassword === currentPassword) {
+                    // Shared password correct, show comment
                     const seatNumber = document.getElementById('seatNumber').value;
                     const data = ratingsData[seatNumber];
                     
