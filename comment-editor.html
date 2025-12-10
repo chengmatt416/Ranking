@@ -239,6 +239,7 @@
 
     <script>
         let activationData = null;
+        let currentData = null;
 
         async function activateEditor() {
             const code = document.getElementById('activationCode').value.trim();
@@ -259,6 +260,9 @@
 
                 activationData = validation.data;
                 
+                // Load existing data.csv
+                await loadExistingData();
+                
                 // Show editor section
                 document.getElementById('activationSection').style.display = 'none';
                 document.getElementById('editorSection').style.display = 'block';
@@ -272,6 +276,48 @@
             }
         }
 
+        async function loadExistingData() {
+            try {
+                const response = await fetch('data.csv');
+                const text = await response.text();
+                currentData = parseDataCSV(text);
+            } catch (error) {
+                showError('無法載入現有資料檔案');
+                throw error;
+            }
+        }
+
+        function parseDataCSV(text) {
+            const lines = text.trim().split('\n');
+            
+            // Store all lines for reconstruction
+            const data = {
+                lines: lines,
+                comments: {}
+            };
+            
+            // Find comment row index
+            let commentRowIndex = -1;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('銳評')) {
+                    commentRowIndex = i;
+                    break;
+                }
+            }
+            
+            // Parse existing comments if they exist
+            if (commentRowIndex > 0) {
+                const commentLine = lines[commentRowIndex].split(',');
+                // Comments are in order from seat 25 to 46
+                for (let i = 0; i < 22 && i + 1 < commentLine.length; i++) {
+                    const seatNum = 25 + i;
+                    data.comments[seatNum] = commentLine[i + 1] || '';
+                }
+            }
+            
+            return data;
+        }
+
         function generateAllCommentForms() {
             const container = document.getElementById('allCommentsContainer');
             container.innerHTML = '';
@@ -280,11 +326,12 @@
             for (let seat = 25; seat <= 46; seat++) {
                 const commentDiv = document.createElement('div');
                 commentDiv.className = 'comment-item';
+                const existingComment = currentData.comments[seat] || '';
                 commentDiv.innerHTML = `
                     <h4>座號 ${seat} 的銳評</h4>
                     <div class="input-group">
-                        <textarea id="comment_${seat}" placeholder="請輸入對座號 ${seat} 的銳評..." oninput="updateCharCount(${seat})"></textarea>
-                        <div class="char-count" id="charCount_${seat}">0 字</div>
+                        <textarea id="comment_${seat}" placeholder="請輸入對座號 ${seat} 的銳評..." oninput="updateCharCount(${seat})">${existingComment}</textarea>
+                        <div class="char-count" id="charCount_${seat}">${existingComment.length} 字</div>
                     </div>
                 `;
                 container.appendChild(commentDiv);
@@ -396,19 +443,46 @@
         }
 
         function generateCommentFile(submission) {
-            // CSV format: target_seat,comment
-            let csvContent = '目標座號,銳評\n';
+            // Reconstruct the complete data.csv file
+            const lines = [...currentData.lines];
             
-            for (let seat = 25; seat <= 46; seat++) {
-                const comment = submission.comments[seat] || '';
-                csvContent += `${seat},"${comment.replace(/"/g, '""')}"\n`;
+            // Find or create the comment row
+            let commentRowIndex = -1;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('銳評')) {
+                    commentRowIndex = i;
+                    break;
+                }
             }
             
-            // Add metadata row
-            csvContent += `\n編輯者座號:,${submission.editorSeat}\n`;
-            csvContent += `提交時間:,${submission.timestamp}\n`;
+            // Build new comment row
+            let commentRow = '銳評';
+            for (let seat = 25; seat <= 46; seat++) {
+                const comment = submission.comments[seat] || '';
+                commentRow += ',' + comment;
+            }
             
-            return csvContent;
+            // Update or add comment row
+            if (commentRowIndex >= 0) {
+                lines[commentRowIndex] = commentRow;
+            } else {
+                // Add comment row before password row (if exists)
+                let passwordRowIndex = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].startsWith('密碼')) {
+                        passwordRowIndex = i;
+                        break;
+                    }
+                }
+                
+                if (passwordRowIndex >= 0) {
+                    lines.splice(passwordRowIndex, 0, commentRow);
+                } else {
+                    lines.push(commentRow);
+                }
+            }
+            
+            return lines.join('\n') + '\n';
         }
 
         function downloadFile(content, filename) {
