@@ -145,6 +145,11 @@
             padding: 30px;
             background: #f8f9fa;
             border-radius: 15px;
+            display: none;
+        }
+
+        .ranking-section.visible {
+            display: block;
         }
 
         .ranking-section h2 {
@@ -228,6 +233,30 @@
 
         .admin-link a:hover {
             text-decoration: underline;
+        }
+
+        .show-ranking-btn {
+            display: block;
+            margin: 30px auto;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .show-ranking-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .show-ranking-btn:active {
+            transform: translateY(0);
         }
 
         .password-section {
@@ -440,6 +469,10 @@
             </div>
         </div>
 
+        <button class="show-ranking-btn" id="showRankingBtn" onclick="toggleRankings()">
+            📊 顯示評價排行榜
+        </button>
+
         <div class="ranking-section" id="rankingSection">
             <h2>📊 評價排行榜</h2>
             
@@ -620,6 +653,8 @@
                 // Load and merge all comment files from manifest
                 await loadAllComments();
                 
+                // Prepare rankings data but don't display automatically
+                // User needs to click button to show rankings
                 displayRankings();
             } catch (error) {
                 showError('無法載入資料檔案');
@@ -991,6 +1026,24 @@
 
             document.getElementById('topRankings').innerHTML = topRankingsHTML;
             document.getElementById('bottomRankings').innerHTML = bottomRankingsHTML;
+        }
+
+        function toggleRankings() {
+            const rankingSection = document.getElementById('rankingSection');
+            const button = document.getElementById('showRankingBtn');
+            
+            if (rankingSection.classList.contains('visible')) {
+                // Hide rankings
+                rankingSection.classList.remove('visible');
+                button.textContent = '📊 顯示評價排行榜';
+            } else {
+                // Show rankings
+                rankingSection.classList.add('visible');
+                button.textContent = '📊 隱藏評價排行榜';
+                
+                // Scroll to rankings section smoothly
+                rankingSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
 
         function showError(message) {
