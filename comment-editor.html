@@ -401,10 +401,10 @@
             localStorage.setItem('usedCommentCodes', JSON.stringify(usedCodes));
 
             // Download the file with unique name
-            const filename = `comments/editor_${submission.editorSeat}_${Date.now()}.csv`;
+            const filename = `editor_${submission.editorSeat}_${Date.now()}.csv`;
             downloadFile(fileContent, filename);
 
-            showSuccess(`銳評已提交！檔案已下載為 ${filename}，請將此檔案直接加入到 repository 的 comments/ 目錄中。多位編輯者可以同時提交不同的檔案。`);
+            showSuccess(`銳評已提交！檔案已下載為 ${filename}，請將此檔案加入到 repository 的 comments/ 目錄中，並更新 comments/manifest.json。多位編輯者可以同時提交不同的檔案。`);
             
             // Reset form
             setTimeout(() => {
