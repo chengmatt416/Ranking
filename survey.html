@@ -562,6 +562,21 @@
             successDiv.style.display = 'block';
         }
 
+        // Check for activation code in URL parameter
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (code) {
+                // Auto-fill the activation code
+                document.getElementById('activationCode').value = code;
+                
+                // Optionally auto-activate if code is present
+                // Uncomment the next line to auto-activate
+                // activateSurvey();
+            }
+        });
+
         // Register Service Worker for PWA functionality
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
