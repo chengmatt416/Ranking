@@ -214,27 +214,42 @@
             <div class="success-message" id="successMessage"></div>
             
             <div class="input-group">
-                <label for="newPassword">生成新的查看密碼：</label>
+                <label for="newPassword">生成新的查看密碼（銳評）：</label>
                 <input type="text" id="newPassword" placeholder="輸入新密碼或自動生成">
             </div>
             
             <button class="generate-btn" onclick="generatePassword()">自動生成密碼</button>
-            <button onclick="setPassword()">設定密碼</button>
+            <button onclick="setPassword()">設定銳評密碼</button>
             
             <div class="password-display" id="currentPasswordDisplay" style="display: none;">
-                <h3>當前查看密碼</h3>
+                <h3>當前查看密碼（銳評）</h3>
                 <div class="password-value" id="currentPasswordValue">-</div>
+            </div>
+
+            <div class="input-group" style="margin-top: 30px;">
+                <label for="newQueryPassword">生成新的查詢密碼（多次查詢）：</label>
+                <input type="text" id="newQueryPassword" placeholder="輸入新密碼或自動生成">
+            </div>
+            
+            <button class="generate-btn" onclick="generateQueryPassword()">自動生成查詢密碼</button>
+            <button onclick="setQueryPassword()">設定查詢密碼</button>
+            
+            <div class="password-display" id="currentQueryPasswordDisplay" style="display: none;">
+                <h3>當前查詢密碼（多次查詢）</h3>
+                <div class="password-value" id="currentQueryPasswordValue">-</div>
             </div>
 
             <div class="info-box">
                 <h4>📋 使用說明</h4>
                 <p>
+                    <strong>銳評密碼：</strong>用於查看銳評內容<br>
+                    <strong>查詢密碼：</strong>用於允許使用者多次查詢評價<br><br>
                     1. 點擊「自動生成密碼」可生成隨機密碼<br>
                     2. 或手動輸入密碼後點擊「設定密碼」<br>
                     3. 系統會自動下載新的 data.csv 檔案<br>
                     4. 請將下載的 data.csv 檔案替換原有的檔案<br>
                     5. 密碼將在所有裝置上同步生效<br>
-                    6. 將密碼分享給需要查看銳評的使用者<br>
+                    6. 將密碼分享給需要的使用者<br>
                     7. 注意：如修改了 Ranking.xlsx，請運行 convert_xlsx_to_csv.py 轉換
                 </p>
             </div>
@@ -252,6 +267,7 @@
         let isLoggedIn = false;
         let csvData = null;
         let currentPassword = '';
+        let queryPassword = '';
 
         // Load CSV data
         async function loadCSVData() {
@@ -267,13 +283,16 @@
 
         function parsePassword(text) {
             const lines = text.trim().split('\n');
-            // Find the password row (format: 密碼,password_value)
+            // Find the password row (format: 密碼,password_value,query_password)
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 if (line.startsWith('密碼,')) {
                     const parts = line.split(',');
                     if (parts[1]) {
                         currentPassword = parts[1].trim();
+                    }
+                    if (parts[2]) {
+                        queryPassword = parts[2].trim();
                     }
                     break;
                 }
@@ -309,6 +328,15 @@
             document.getElementById('newPassword').value = password;
         }
 
+        function generateQueryPassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let password = '';
+            for (let i = 0; i < 8; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('newQueryPassword').value = password;
+        }
+
         function setPassword() {
             const newPassword = document.getElementById('newPassword').value;
             
@@ -324,7 +352,10 @@
             let passwordRowFound = false;
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith('密碼,')) {
-                    lines[i] = '密碼,' + newPassword;
+                    // Update only the comment password, keep query password if exists
+                    const parts = lines[i].split(',');
+                    const existingQueryPassword = parts[2] || '';
+                    lines[i] = '密碼,' + newPassword + (existingQueryPassword ? ',' + existingQueryPassword : '');
                     passwordRowFound = true;
                     break;
                 }
@@ -342,8 +373,48 @@
             downloadCSV(csvData);
             
             loadCurrentPassword();
-            showSuccess('密碼已更新！請下載新的 data.csv 檔案並替換原檔案。\n注意：如果您修改了 Ranking.xlsx，請重新運行 convert_xlsx_to_csv.py 轉換腳本。');
+            showSuccess('銳評密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
             document.getElementById('newPassword').value = '';
+        }
+
+        function setQueryPassword() {
+            const newQueryPassword = document.getElementById('newQueryPassword').value;
+            
+            if (!newQueryPassword || newQueryPassword.trim() === '') {
+                alert('請輸入查詢密碼或點擊自動生成！');
+                return;
+            }
+
+            // Update CSV data with new query password
+            const lines = csvData.trim().split('\n');
+            
+            // Check if password row exists
+            let passwordRowFound = false;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].startsWith('密碼,')) {
+                    // Update query password (third column)
+                    const parts = lines[i].split(',');
+                    const existingCommentPassword = parts[1] || '';
+                    lines[i] = '密碼,' + existingCommentPassword + ',' + newQueryPassword;
+                    passwordRowFound = true;
+                    break;
+                }
+            }
+            
+            // If password row doesn't exist, add it
+            if (!passwordRowFound) {
+                lines.push('密碼,,' + newQueryPassword);
+            }
+            
+            csvData = lines.join('\n');
+            queryPassword = newQueryPassword;
+            
+            // Create download link
+            downloadCSV(csvData);
+            
+            loadCurrentPassword();
+            showSuccess('查詢密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
+            document.getElementById('newQueryPassword').value = '';
         }
 
         function downloadCSV(content) {
@@ -361,11 +432,18 @@
         }
 
         function loadCurrentPassword() {
-            if (currentPassword && currentPassword !== 'PASSWORD_PLACEHOLDER') {
+            if (currentPassword && currentPassword !== '') {
                 document.getElementById('currentPasswordValue').textContent = currentPassword;
                 document.getElementById('currentPasswordDisplay').style.display = 'block';
             } else {
                 document.getElementById('currentPasswordDisplay').style.display = 'none';
+            }
+
+            if (queryPassword && queryPassword !== '') {
+                document.getElementById('currentQueryPasswordValue').textContent = queryPassword;
+                document.getElementById('currentQueryPasswordDisplay').style.display = 'block';
+            } else {
+                document.getElementById('currentQueryPasswordDisplay').style.display = 'none';
             }
         }
 

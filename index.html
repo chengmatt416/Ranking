@@ -254,6 +254,14 @@
                 <button onclick="queryRating()">查詢評價</button>
             </div>
             
+            <div class="password-section" id="queryPasswordSection" style="display: none;">
+                <div class="input-group">
+                    <label for="queryPasswordInput">查詢密碼（多次查詢需要）：</label>
+                    <input type="password" id="queryPasswordInput" placeholder="輸入查詢密碼">
+                    <button onclick="queryWithPassword()">使用密碼查詢</button>
+                </div>
+            </div>
+            
             <div class="password-section" id="passwordSection" style="display: none;">
                 <div class="input-group">
                     <label for="viewPassword">查看銳評密碼：</label>
@@ -301,6 +309,7 @@
     <script>
         let ratingsData = null;
         let currentPassword = '';
+        let queryPassword = '';
         const ADMIN_PASSWORD = 'RAN+';
 
         // Load CSV data
@@ -379,6 +388,10 @@
                 if (passwordLine[1]) {
                     currentPassword = passwordLine[1];
                 }
+                // Check if there's a query password (third column)
+                if (passwordLine[2]) {
+                    queryPassword = passwordLine[2];
+                }
             }
         }
 
@@ -418,6 +431,7 @@
             const hasQueried = localStorage.getItem(queryKey);
             
             if (hasQueried) {
+                // If user has already queried, they need to enter query password
                 return false;
             }
             
@@ -425,24 +439,66 @@
             return true;
         }
 
-        function queryRating() {
-            const seatNumber = document.getElementById('seatNumber').value;
-            
+        function resetQueryLimit() {
+            const queryKey = `query_lifetime`;
+            localStorage.removeItem(queryKey);
+        }
+
+        function validateQuery(seatNumber) {
             if (!seatNumber || seatNumber < 25 || seatNumber > 46) {
                 showError('請輸入有效的座號 (25-46)');
-                return;
+                return false;
             }
 
             if (!ratingsData || !ratingsData[seatNumber]) {
                 showError('找不到該座號的資料');
+                return false;
+            }
+
+            return true;
+        }
+
+        function queryRating() {
+            const seatNumber = document.getElementById('seatNumber').value;
+            
+            if (!validateQuery(seatNumber)) {
                 return;
             }
 
             if (!checkDailyLimit(seatNumber)) {
-                showError('您已經查詢過了，每個瀏覽器只能查詢一次！');
+                // User has already queried, show password input
+                document.getElementById('queryPasswordSection').style.display = 'block';
+                showError('您已經查詢過了！如需再次查詢，請輸入查詢密碼。');
                 return;
             }
 
+            displayRatingResult(seatNumber);
+        }
+
+        function queryWithPassword() {
+            const seatNumber = document.getElementById('seatNumber').value;
+            const inputPassword = document.getElementById('queryPasswordInput').value;
+            
+            if (!validateQuery(seatNumber)) {
+                return;
+            }
+
+            if (!queryPassword) {
+                showError('尚未設定查詢密碼，請聯絡管理員');
+                return;
+            }
+
+            if (inputPassword !== queryPassword) {
+                showError('查詢密碼錯誤！');
+                return;
+            }
+
+            // Password correct, allow query
+            displayRatingResult(seatNumber);
+            document.getElementById('queryPasswordInput').value = '';
+        }
+
+        function displayRatingResult(seatNumber) {
             const data = ratingsData[seatNumber];
             const rating = calculateAverage(data.ratings);
             const avgValue = (data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length).toFixed(2);
