@@ -317,12 +317,81 @@
         // Load CSV data
         async function loadData() {
             try {
+                // Load ratings from data.csv
                 const response = await fetch('data.csv');
                 const text = await response.text();
                 parseCSV(text);
+                
+                // Load and merge all comment files from manifest
+                await loadAllComments();
+                
                 displayRankings();
             } catch (error) {
                 showError('無法載入資料檔案');
+            }
+        }
+
+        async function loadAllComments() {
+            try {
+                // Load manifest of comment files
+                const manifestResponse = await fetch('comments/manifest.json');
+                const manifest = await manifestResponse.json();
+                
+                // Load each comment file and merge
+                for (const filename of manifest.comment_files) {
+                    try {
+                        const commentResponse = await fetch(`comments/${filename}`);
+                        const commentText = await commentResponse.text();
+                        mergeComments(commentText);
+                    } catch (error) {
+                        console.log(`Could not load ${filename}:`, error);
+                    }
+                }
+            } catch (error) {
+                // Manifest doesn't exist or error loading - no comments to merge
+                console.log('No comment manifest found or error loading comments');
+            }
+        }
+
+        function mergeComments(text) {
+            const lines = text.trim().split('\n');
+            
+            // Skip header row if exists
+            const startRow = lines[0] && lines[0].includes('座號') ? 1 : 0;
+            
+            // Parse and merge comments (format: seat_number,"comment")
+            for (let i = startRow; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // Use proper CSV parsing - find first comma, rest is the comment
+                const firstCommaIndex = line.indexOf(',');
+                if (firstCommaIndex === -1) continue;
+                
+                const seatStr = line.substring(0, firstCommaIndex).trim();
+                const seatNum = parseInt(seatStr);
+                
+                if (isNaN(seatNum) || seatNum < 25 || seatNum > 46) continue;
+                if (!ratingsData[seatNum]) continue;
+                
+                // Extract comment value (everything after first comma)
+                let commentValue = line.substring(firstCommaIndex + 1).trim();
+                
+                // Handle CSV quoting: if starts and ends with quotes, remove them and unescape
+                if (commentValue.startsWith('"') && commentValue.endsWith('"') && commentValue.length >= 2) {
+                    commentValue = commentValue.substring(1, commentValue.length - 1);
+                    // Unescape doubled quotes (CSV standard)
+                    commentValue = commentValue.replace(/""/g, '"');
+                }
+                
+                // Merge comments - concatenate with existing if both exist
+                if (commentValue) {
+                    if (ratingsData[seatNum].comment) {
+                        ratingsData[seatNum].comment += ' | ' + commentValue;
+                    } else {
+                        ratingsData[seatNum].comment = commentValue;
+                    }
+                }
             }
         }
 

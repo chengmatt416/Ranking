@@ -239,6 +239,7 @@
 
     <script>
         let activationData = null;
+        let currentData = null;
 
         async function activateEditor() {
             const code = document.getElementById('activationCode').value.trim();
@@ -259,6 +260,9 @@
 
                 activationData = validation.data;
                 
+                // Load existing data.csv
+                await loadExistingData();
+                
                 // Show editor section
                 document.getElementById('activationSection').style.display = 'none';
                 document.getElementById('editorSection').style.display = 'block';
@@ -272,6 +276,17 @@
             }
         }
 
+        async function loadExistingData() {
+            // Initialize empty comments - editors start fresh
+            // No need to load existing data to prevent access to other's comments
+            currentData = {
+                comments: {}
+            };
+            for (let seat = 25; seat <= 46; seat++) {
+                currentData.comments[seat] = '';
+            }
+        }
+
         function generateAllCommentForms() {
             const container = document.getElementById('allCommentsContainer');
             container.innerHTML = '';
@@ -280,11 +295,12 @@
             for (let seat = 25; seat <= 46; seat++) {
                 const commentDiv = document.createElement('div');
                 commentDiv.className = 'comment-item';
+                const existingComment = currentData.comments[seat] || '';
                 commentDiv.innerHTML = `
                     <h4>座號 ${seat} 的銳評</h4>
                     <div class="input-group">
-                        <textarea id="comment_${seat}" placeholder="請輸入對座號 ${seat} 的銳評..." oninput="updateCharCount(${seat})"></textarea>
-                        <div class="char-count" id="charCount_${seat}">0 字</div>
+                        <textarea id="comment_${seat}" placeholder="請輸入對座號 ${seat} 的銳評..." oninput="updateCharCount(${seat})">${existingComment}</textarea>
+                        <div class="char-count" id="charCount_${seat}">${existingComment.length} 字</div>
                     </div>
                 `;
                 container.appendChild(commentDiv);
@@ -384,10 +400,11 @@
             usedCodes.push(activationData.code);
             localStorage.setItem('usedCommentCodes', JSON.stringify(usedCodes));
 
-            // Download the file
-            downloadFile(fileContent, `comments_editor_${submission.editorSeat}_${Date.now()}.csv`);
+            // Download the file with unique name
+            const filename = `editor_${submission.editorSeat}_${Date.now()}.csv`;
+            downloadFile(fileContent, filename);
 
-            showSuccess('銳評已提交！檔案已下載，請將檔案提交至 repository。');
+            showSuccess(`銳評已提交！檔案已下載為 ${filename}，請將此檔案加入到 repository 的 comments/ 目錄中，並更新 comments/manifest.json。多位編輯者可以同時提交不同的檔案。`);
             
             // Reset form
             setTimeout(() => {
@@ -396,17 +413,15 @@
         }
 
         function generateCommentFile(submission) {
-            // CSV format: target_seat,comment
-            let csvContent = '目標座號,銳評\n';
+            // Generate comments.csv file (simple format: seat,comment)
+            let csvContent = '座號,銳評\n';
             
             for (let seat = 25; seat <= 46; seat++) {
                 const comment = submission.comments[seat] || '';
-                csvContent += `${seat},"${comment.replace(/"/g, '""')}"\n`;
+                // Escape quotes in comments
+                const escapedComment = comment.replace(/"/g, '""');
+                csvContent += `${seat},"${escapedComment}"\n`;
             }
-            
-            // Add metadata row
-            csvContent += `\n編輯者座號:,${submission.editorSeat}\n`;
-            csvContent += `提交時間:,${submission.timestamp}\n`;
             
             return csvContent;
         }
