@@ -49,9 +49,12 @@
 
 - `index.html` - 主頁面，用於查詢評價
 - `admin.html` - 管理員頁面，用於管理密碼
-- `Ranking.xlsx` - 原始評價資料檔案（Excel 格式）
-- `data.csv` - 系統使用的評價資料檔案（自動生成）
-- `convert_xlsx_to_csv.py` - 轉換腳本，將 Ranking.xlsx 轉換為 data.csv
+- `comment-editor.html` - 銳評編輯頁面（支援多人同時編輯）
+- `data.csv` - 系統使用的評價資料檔案
+- `comments/` - 存放銳評檔案的目錄
+  - `manifest.json` - 記錄要載入的銳評檔案清單
+  - `editor_{座號}_{時間戳}.csv` - 個別編輯者提交的銳評檔案
+  - `README.md` - 銳評系統說明文件
 
 ## 資料格式
 
