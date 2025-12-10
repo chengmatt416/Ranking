@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>密碼分享</title>
+    <title>啟用碼分享</title>
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
@@ -29,7 +29,7 @@
 
         body {
             font-family: 'Microsoft JhengHei', Arial, sans-serif;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
             display: flex;
@@ -48,7 +48,7 @@
 
         h1 {
             text-align: center;
-            color: #f5576c;
+            color: #667eea;
             margin-bottom: 30px;
             font-size: 2.5em;
         }
@@ -84,14 +84,14 @@
 
         input[type="password"]:focus, input[type="text"]:focus, input[type="number"]:focus {
             outline: none;
-            border-color: #f5576c;
+            border-color: #667eea;
         }
 
         button {
             width: 100%;
             padding: 15px;
             font-size: 1.2em;
-            background: #f5576c;
+            background: #667eea;
             color: white;
             border: none;
             border-radius: 8px;
@@ -102,7 +102,7 @@
         }
 
         button:hover {
-            background: #e04656;
+            background: #5568d3;
         }
 
         button:active {
@@ -126,38 +126,29 @@
             background: #218838;
         }
 
-        .checkbox-group {
+        .radio-group {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
         }
 
-        .checkbox-item {
+        .radio-item {
             margin-bottom: 15px;
         }
 
-        .checkbox-item label {
+        .radio-item label {
             display: flex;
             align-items: center;
             font-weight: normal;
             cursor: pointer;
         }
 
-        .checkbox-item input[type="checkbox"] {
+        .radio-item input[type="radio"] {
             width: 20px;
             height: 20px;
             margin-right: 10px;
             cursor: pointer;
-        }
-
-        .password-preview {
-            background: #e7f3ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-family: 'Courier New', monospace;
-            color: #0c5460;
         }
 
         .share-result {
@@ -236,19 +227,13 @@
         }
 
         .back-link a {
-            color: #f5576c;
+            color: #667eea;
             text-decoration: none;
             font-size: 1em;
         }
 
         .back-link a:hover {
             text-decoration: underline;
-        }
-
-        .view-limit-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
         }
 
         .qrcode-container {
@@ -270,21 +255,27 @@
             background: white;
             border-radius: 5px;
         }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔗 密碼分享</h1>
+        <h1>🔗 啟用碼分享</h1>
         
         <div class="login-section" id="loginSection">
             <div class="info-box">
                 <h4>📋 功能說明</h4>
                 <p>
-                    安全地分享密碼給其他使用者：<br>
-                    • 收到連結的使用者無法直接查看密碼<br>
-                    • 他們必須設定自己的通行碼來保護密碼<br>
-                    • 可以設定查看次數限制<br>
-                    • 整個過程中沒有人能看到明文密碼
+                    安全地分享啟用碼給其他使用者：<br>
+                    • 生成帶有連結的啟用碼，方便一鍵使用<br>
+                    • 可以設定使用次數限制<br>
+                    • 可以設定有效期限<br>
+                    • 自動生成 QR Code 方便手機掃描
                 </p>
             </div>
 
@@ -308,35 +299,33 @@
             <div class="success-message" id="successMessage"></div>
             
             <div class="input-group">
-                <label>選擇要分享的密碼：</label>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
+                <label>選擇啟用碼類型：</label>
+                <div class="radio-group">
+                    <div class="radio-item">
                         <label>
-                            <input type="checkbox" id="shareCommentPassword">
-                            銳評密碼
-                            <span class="password-preview" id="commentPasswordPreview">載入中...</span>
+                            <input type="radio" name="codeType" value="survey" checked>
+                            問卷啟用碼 - 用於填寫評價問卷
                         </label>
                     </div>
-                    <div class="checkbox-item">
+                    <div class="radio-item">
                         <label>
-                            <input type="checkbox" id="shareQueryPassword">
-                            查詢密碼
-                            <span class="password-preview" id="queryPasswordPreview">載入中...</span>
+                            <input type="radio" name="codeType" value="comment">
+                            銳評編輯啟用碼 - 用於編輯銳評內容
                         </label>
                     </div>
                 </div>
             </div>
 
             <div class="input-group">
-                <label>查看限制設定：</label>
-                <div class="view-limit-group">
+                <label>啟用碼配置：</label>
+                <div class="config-grid">
                     <div>
-                        <label style="font-size: 0.9em;">查看次數（0 = 無限制）</label>
-                        <input type="number" id="viewLimit" value="1" min="0" max="100">
+                        <label style="font-size: 0.9em;">座號</label>
+                        <input type="number" id="seatNumber" min="1" max="50" placeholder="填寫者/編輯者座號">
                     </div>
                     <div>
-                        <label style="font-size: 0.9em;">有效期限（天數，0 = 無限期）</label>
-                        <input type="number" id="expiryDays" value="7" min="0" max="365">
+                        <label style="font-size: 0.9em;">有效天數</label>
+                        <input type="number" id="validDays" value="7" min="1" max="365">
                     </div>
                 </div>
             </div>
@@ -356,16 +345,15 @@
             </div>
 
             <div class="info-box">
-                <h4>🔒 安全提示</h4>
+                <h4>🔒 使用說明</h4>
                 <p>
                     <strong>分享流程：</strong><br>
-                    1. 選擇要分享的密碼（可多選）<br>
-                    2. 設定查看次數和有效期限<br>
-                    3. 生成加密的分享連結<br>
-                    4. 收到連結的使用者必須先設定自己的4位數通行碼<br>
-                    5. 密碼會以加密形式儲存在他們的裝置上<br>
-                    6. 他們之後使用通行碼來解鎖密碼使用<br><br>
-                    <strong>注意：</strong>整個過程中，沒有人能直接看到密碼的明文內容！
+                    1. 選擇啟用碼類型（問卷或銳評編輯）<br>
+                    2. 輸入座號和有效天數<br>
+                    3. 生成分享連結和 QR Code<br>
+                    4. 將連結或 QR Code 分享給使用者<br>
+                    5. 使用者點擊連結可直接跳轉並自動填入啟用碼<br><br>
+                    <strong>注意：</strong>每個啟用碼只能使用一次！
                 </p>
             </div>
 
@@ -384,152 +372,6 @@
     <script src="auth.js"></script>
     <script>
         let isLoggedIn = false;
-        let currentCommentPassword = '';
-        let currentQueryPassword = '';
-
-        // AES-like encryption using Web Crypto API
-        async function encryptData(data, password) {
-            const encoder = new TextEncoder();
-            const dataBuffer = encoder.encode(data);
-            const passwordBuffer = encoder.encode(password);
-            
-            // Create key from password
-            const keyMaterial = await crypto.subtle.importKey(
-                'raw',
-                passwordBuffer,
-                'PBKDF2',
-                false,
-                ['deriveBits', 'deriveKey']
-            );
-            
-            const salt = crypto.getRandomValues(new Uint8Array(16));
-            const key = await crypto.subtle.deriveKey(
-                {
-                    name: 'PBKDF2',
-                    salt: salt,
-                    iterations: 100000,
-                    hash: 'SHA-256'
-                },
-                keyMaterial,
-                { name: 'AES-GCM', length: 256 },
-                false,
-                ['encrypt']
-            );
-            
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            const encryptedData = await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv: iv },
-                key,
-                dataBuffer
-            );
-            
-            // Combine salt, iv, and encrypted data
-            const result = new Uint8Array(salt.length + iv.length + encryptedData.byteLength);
-            result.set(salt, 0);
-            result.set(iv, salt.length);
-            result.set(new Uint8Array(encryptedData), salt.length + iv.length);
-            
-            // Convert to base64
-            return btoa(String.fromCharCode.apply(null, result));
-        }
-
-        async function decryptData(encryptedBase64, password) {
-            try {
-                const encrypted = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-                
-                const salt = encrypted.slice(0, 16);
-                const iv = encrypted.slice(16, 28);
-                const data = encrypted.slice(28);
-                
-                const encoder = new TextEncoder();
-                const passwordBuffer = encoder.encode(password);
-                
-                const keyMaterial = await crypto.subtle.importKey(
-                    'raw',
-                    passwordBuffer,
-                    'PBKDF2',
-                    false,
-                    ['deriveBits', 'deriveKey']
-                );
-                
-                const key = await crypto.subtle.deriveKey(
-                    {
-                        name: 'PBKDF2',
-                        salt: salt,
-                        iterations: 100000,
-                        hash: 'SHA-256'
-                    },
-                    keyMaterial,
-                    { name: 'AES-GCM', length: 256 },
-                    false,
-                    ['decrypt']
-                );
-                
-                const decryptedData = await crypto.subtle.decrypt(
-                    { name: 'AES-GCM', iv: iv },
-                    key,
-                    data
-                );
-                
-                const decoder = new TextDecoder();
-                return decoder.decode(decryptedData);
-            } catch (error) {
-                throw new Error('解密失敗');
-            }
-        }
-
-        async function loadPasswords() {
-            try {
-                const response = await fetch('data.csv');
-                const text = await response.text();
-                parsePasswords(text);
-                displayPasswordPreviews();
-            } catch (error) {
-                showShareError('無法載入密碼資料');
-            }
-        }
-
-        function parsePasswords(text) {
-            const lines = text.trim().split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].startsWith('密碼,')) {
-                    const parts = lines[i].split(',');
-                    if (parts[1]) {
-                        currentCommentPassword = parts[1].trim();
-                    }
-                    if (parts[2]) {
-                        currentQueryPassword = parts[2].trim();
-                    }
-                    break;
-                }
-            }
-        }
-
-        function displayPasswordPreviews() {
-            const commentPreview = document.getElementById('commentPasswordPreview');
-            const queryPreview = document.getElementById('queryPasswordPreview');
-            
-            if (currentCommentPassword) {
-                commentPreview.textContent = maskPassword(currentCommentPassword);
-            } else {
-                commentPreview.textContent = '未設定';
-                document.getElementById('shareCommentPassword').disabled = true;
-            }
-            
-            if (currentQueryPassword) {
-                queryPreview.textContent = maskPassword(currentQueryPassword);
-            } else {
-                queryPreview.textContent = '未設定';
-                document.getElementById('shareQueryPassword').disabled = true;
-            }
-        }
-
-        function maskPassword(password) {
-            if (password.length <= 4) {
-                return '*'.repeat(password.length);
-            }
-            return password.substring(0, 2) + '*'.repeat(password.length - 4) + password.substring(password.length - 2);
-        }
 
         async function login() {
             const password = document.getElementById('adminPassword').value;
@@ -539,7 +381,6 @@
                 isLoggedIn = true;
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('sharePanel').style.display = 'block';
-                loadPasswords();
             } else {
                 showLoginError('管理員密碼錯誤！');
             }
@@ -554,53 +395,24 @@
         }
 
         async function generateShareLink() {
-            const shareComment = document.getElementById('shareCommentPassword').checked;
-            const shareQuery = document.getElementById('shareQueryPassword').checked;
+            const codeType = document.querySelector('input[name="codeType"]:checked').value;
+            const seatNumber = document.getElementById('seatNumber').value;
+            const validDays = parseInt(document.getElementById('validDays').value) || 7;
             
-            if (!shareComment && !shareQuery) {
-                showShareError('請至少選擇一個密碼進行分享！');
+            if (!seatNumber) {
+                showShareError('請輸入座號！');
                 return;
             }
 
-            const viewLimit = parseInt(document.getElementById('viewLimit').value) || 0;
-            const expiryDays = parseInt(document.getElementById('expiryDays').value) || 0;
+            // Generate activation code
+            const activationCode = generateActivationCode(codeType, seatNumber, validDays);
             
-            // Calculate expiry timestamp
-            let expiryTimestamp = 0;
-            if (expiryDays > 0) {
-                const expiryDate = new Date();
-                expiryDate.setDate(expiryDate.getDate() + expiryDays);
-                expiryTimestamp = expiryDate.getTime();
-            }
+            // Determine target page based on code type
+            const targetPage = codeType === 'survey' ? 'survey.html' : 'comment-editor.html';
             
-            // Generate a random encryption key for this share
-            const shareKey = generateRandomKey(32);
-            
-            // Create share data
-            const shareData = {
-                passwords: {},
-                viewLimit: viewLimit,
-                expiry: expiryTimestamp,
-                created: Date.now()
-            };
-            
-            if (shareComment) {
-                shareData.passwords.comment = currentCommentPassword;
-            }
-            if (shareQuery) {
-                shareData.passwords.query = currentQueryPassword;
-            }
-            
-            // Encrypt the share data
-            const encryptedData = await encryptData(JSON.stringify(shareData), shareKey);
-            
-            // Create URL
-            // NOTE: Including encryption key in URL is necessary for static website architecture
-            // Trade-off: Key visible in URL/logs vs. requiring server-side key management
-            // The encrypted data is still protected, and users set their own passcode
-            // Links should be shared via secure channels (not public/logged URLs)
-            const baseUrl = window.location.origin + window.location.pathname.replace('password-share.html', '');
-            const shareUrl = `${baseUrl}password-receive.html?data=${encodeURIComponent(encryptedData)}&key=${encodeURIComponent(shareKey)}`;
+            // Create URL with activation code
+            const baseUrl = window.location.origin + window.location.pathname.replace('activation-share.html', '');
+            const shareUrl = `${baseUrl}${targetPage}?code=${encodeURIComponent(activationCode)}`;
             
             // Display result
             document.getElementById('shareUrl').textContent = shareUrl;
@@ -610,6 +422,28 @@
             generateQRCode(shareUrl);
             
             showSuccess('分享連結已生成！');
+        }
+
+        function generateActivationCode(type, seatNumber, validDays) {
+            // Calculate expiry timestamp
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + validDays);
+            const expiryTimestamp = expiryDate.getTime();
+            
+            // Create code based on type
+            if (type === 'survey') {
+                // Survey activation code format: evaluatorSeat|expiryTimestamp|signature
+                const secret = 'RANKING_SECRET_2024';
+                const signature = btoa(seatNumber + expiryTimestamp + secret).substring(0, 8);
+                const codeData = `${seatNumber}|${expiryTimestamp}|${signature}`;
+                return btoa(codeData);
+            } else {
+                // Comment activation code format: COMMENT|editorSeat|expiryTimestamp|signature
+                const secret = 'RANKING_COMMENT_2024';
+                const signature = btoa('COMMENT' + seatNumber + expiryTimestamp + secret).substring(0, 8);
+                const codeData = `COMMENT|${seatNumber}|${expiryTimestamp}|${signature}`;
+                return btoa(codeData);
+            }
         }
 
         function generateQRCode(url) {
@@ -626,18 +460,6 @@
                 colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.H
             });
-        }
-
-        function generateRandomKey(length) {
-            // Use cryptographically secure random values
-            const array = new Uint8Array(length);
-            crypto.getRandomValues(array);
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let key = '';
-            for (let i = 0; i < length; i++) {
-                key += chars.charAt(array[i] % chars.length);
-            }
-            return key;
         }
 
         function copyShareLink() {

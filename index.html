@@ -667,6 +667,41 @@
             document.getElementById('passcodeModalMessage').textContent = `請為「${featureName}」設定四位數字通行碼`;
             updatePasscodeDisplay();
             document.getElementById('passcodeModal').classList.add('active');
+            
+            // Enable physical keyboard support for computers
+            document.addEventListener('keydown', handlePasscodePhysicalKeyboard);
+        }
+
+        // Physical keyboard handler for passcode input
+        function handlePasscodePhysicalKeyboard(event) {
+            // Only handle when passcode modal is active
+            if (!document.getElementById('passcodeModal').classList.contains('active')) {
+                return;
+            }
+            
+            const key = event.key;
+            
+            // Prevent default behavior for handled keys
+            if (/^[0-9]$/.test(key) || key === 'Backspace' || key === 'Delete' || key === 'Enter' || key === 'Escape') {
+                event.preventDefault();
+            }
+            
+            // Handle number keys (0-9)
+            if (/^[0-9]$/.test(key)) {
+                passcodeKeyPress(key);
+            }
+            // Handle backspace/delete
+            else if (key === 'Backspace' || key === 'Delete') {
+                passcodeKeyPress('back');
+            }
+            // Handle enter to confirm
+            else if (key === 'Enter') {
+                confirmPasscodeSetup();
+            }
+            // Handle escape to cancel
+            else if (key === 'Escape') {
+                cancelPasscodeSetup();
+            }
         }
 
         function passcodeKeyPress(key) {
@@ -742,6 +777,9 @@
                 passcodeAutoConfirmTimeout = null;
             }
             updatePasscodeDisplay();
+            
+            // Remove physical keyboard event listener
+            document.removeEventListener('keydown', handlePasscodePhysicalKeyboard);
         }
 
         // Shared password decryption
@@ -943,18 +981,9 @@
                 }
             }
 
-            // Parse comments row if exists
-            if (commentRowIndex > 0) {
-                const commentLine = lines[commentRowIndex].split(',');
-                // Match comments to seat numbers by position
-                let seatIndex = 0;
-                const seatNums = Object.keys(ratingsData).sort((a, b) => parseInt(a) - parseInt(b));
-                
-                for (let j = 1; j < commentLine.length && seatIndex < seatNums.length; j++) {
-                    ratingsData[seatNums[seatIndex]].comment = commentLine[j] || '';
-                    seatIndex++;
-                }
-            }
+            // Skip comments from data.csv (survey questionnaire)
+            // Only read comments from comment editor files in comments/ directory
+            // This ensures we don't read survey questionnaire comments, only edited comments
 
             // Parse password row if exists
             if (passwordRowIndex > 0) {
