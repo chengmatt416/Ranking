@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>評價問卷填寫</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .activation-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .survey-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-size: 1.1em;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .rating-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .rating-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            border: 3px solid #ddd;
+            transition: all 0.3s;
+        }
+
+        .rating-card:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .rating-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .rating-letter {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .rating-desc {
+            font-size: 0.9em;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #dc3545;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #0c5460;
+            line-height: 1.6;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 1em;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .seat-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .seat-info h3 {
+            font-size: 1.5em;
+        }
+
+        .seat-rating-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+        }
+
+        .seat-rating-item h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .rating-options-small {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .rating-card-small {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid #ddd;
+            transition: all 0.3s;
+        }
+
+        .rating-card-small:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .rating-card-small.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .rating-letter-small {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .rating-desc-small {
+            font-size: 0.8em;
+        }
+
+        textarea.comment-small {
+            min-height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 評價問卷填寫</h1>
+        
+        <div class="activation-section" id="activationSection">
+            <div class="info-box">
+                <h4>📋 填寫說明</h4>
+                <p>
+                    請輸入管理員提供的啟用碼以開始填寫評價問卷。<br>
+                    每個啟用碼只能使用一次，且有使用期限。
+                </p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            
+            <div class="input-group">
+                <label for="activationCode">啟用碼：</label>
+                <input type="text" id="activationCode" placeholder="輸入啟用碼">
+            </div>
+            
+            <button onclick="activateSurvey()">啟用問卷</button>
+            
+            <div class="back-link">
+                <a href="index.html">← 返回主頁</a>
+            </div>
+        </div>
+
+        <div class="survey-section" id="surveySection">
+            <div class="seat-info" id="seatInfo">
+                <h3>評分者座號：<span id="evaluatorSeat">-</span></h3>
+                <p style="margin-top: 10px;">請為所有座號（25-46）進行評價</p>
+            </div>
+
+            <div class="error-message" id="surveyError"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div id="allRatingsContainer"></div>
+
+            <button onclick="submitSurvey()">提交所有評價</button>
+            
+            <div class="back-link">
+                <a href="index.html">← 返回主頁</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ratings = {}; // Store ratings for all seats
+        let activationData = null;
+
+        async function activateSurvey() {
+            const code = document.getElementById('activationCode').value.trim();
+            
+            if (!code) {
+                showError('請輸入啟用碼！');
+                return;
+            }
+
+            try {
+                // Validate activation code
+                const validation = validateActivationCode(code);
+                
+                if (!validation.valid) {
+                    showError(validation.error);
+                    return;
+                }
+
+                activationData = validation.data;
+                
+                // Show survey section
+                document.getElementById('activationSection').style.display = 'none';
+                document.getElementById('surveySection').style.display = 'block';
+                document.getElementById('evaluatorSeat').textContent = activationData.evaluatorSeat;
+                
+                // Generate rating forms for all seats
+                generateAllRatingForms();
+                
+            } catch (error) {
+                showError('啟用碼格式錯誤！');
+            }
+        }
+
+        function generateAllRatingForms() {
+            const container = document.getElementById('allRatingsContainer');
+            container.innerHTML = '';
+            
+            // Generate forms for seats 25-46
+            for (let seat = 25; seat <= 46; seat++) {
+                const seatDiv = document.createElement('div');
+                seatDiv.className = 'seat-rating-item';
+                seatDiv.innerHTML = `
+                    <h4>座號 ${seat}</h4>
+                    <div class="input-group">
+                        <label>評價等級：</label>
+                        <div class="rating-options-small">
+                            <div class="rating-card-small" onclick="selectRatingForSeat(${seat}, 3, this)">
+                                <div class="rating-letter-small">L</div>
+                                <div class="rating-desc-small">最高</div>
+                            </div>
+                            <div class="rating-card-small" onclick="selectRatingForSeat(${seat}, 2, this)">
+                                <div class="rating-letter-small">S</div>
+                                <div class="rating-desc-small">優秀</div>
+                            </div>
+                            <div class="rating-card-small" onclick="selectRatingForSeat(${seat}, 1, this)">
+                                <div class="rating-letter-small">A</div>
+                                <div class="rating-desc-small">良好</div>
+                            </div>
+                            <div class="rating-card-small" onclick="selectRatingForSeat(${seat}, 0, this)">
+                                <div class="rating-letter-small">X</div>
+                                <div class="rating-desc-small">需改進</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="comment_${seat}">銳評（選填）：</label>
+                        <textarea id="comment_${seat}" class="comment-small" placeholder="選填"></textarea>
+                    </div>
+                `;
+                container.appendChild(seatDiv);
+            }
+        }
+
+        function validateActivationCode(code) {
+            try {
+                // Decode activation code (Base64)
+                const decoded = atob(code);
+                const parts = decoded.split('|');
+                
+                if (parts.length !== 3) {
+                    return { valid: false, error: '啟用碼格式錯誤！' };
+                }
+
+                const [evaluatorSeat, expiryTimestamp, signature] = parts;
+                
+                // Verify signature (simple HMAC-like check)
+                const secret = 'RANKING_SECRET_2024';
+                const expectedSignature = btoa(evaluatorSeat + expiryTimestamp + secret).substring(0, 8);
+                
+                if (signature !== expectedSignature) {
+                    return { valid: false, error: '啟用碼無效！' };
+                }
+
+                // Check expiry
+                const expiryDate = new Date(parseInt(expiryTimestamp));
+                const now = new Date();
+                
+                if (now > expiryDate) {
+                    return { valid: false, error: '啟用碼已過期！' };
+                }
+
+                // Check if already used
+                const usedCodes = JSON.parse(localStorage.getItem('usedActivationCodes') || '[]');
+                if (usedCodes.includes(code)) {
+                    return { valid: false, error: '啟用碼已被使用！' };
+                }
+
+                return {
+                    valid: true,
+                    data: {
+                        evaluatorSeat: evaluatorSeat,
+                        expiryDate: expiryDate,
+                        code: code
+                    }
+                };
+                
+            } catch (error) {
+                return { valid: false, error: '啟用碼格式錯誤！' };
+            }
+        }
+
+        function selectRatingForSeat(seat, rating, element) {
+            ratings[seat] = rating;
+            
+            // Remove selected class from all cards in this seat's group
+            const parent = element.parentElement;
+            parent.querySelectorAll('.rating-card-small').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked card
+            element.classList.add('selected');
+        }
+
+        async function submitSurvey() {
+            // Check if all seats have ratings
+            const missingSeats = [];
+            for (let seat = 25; seat <= 46; seat++) {
+                if (ratings[seat] === undefined) {
+                    missingSeats.push(seat);
+                }
+            }
+
+            if (missingSeats.length > 0) {
+                showSurveyError(`請為所有座號選擇評價！缺少：${missingSeats.join(', ')}`);
+                return;
+            }
+
+            // Collect all comments
+            const comments = {};
+            for (let seat = 25; seat <= 46; seat++) {
+                const commentElement = document.getElementById(`comment_${seat}`);
+                comments[seat] = commentElement ? commentElement.value.trim() : '';
+            }
+
+            // Create submission data
+            const submission = {
+                evaluatorSeat: activationData.evaluatorSeat,
+                ratings: ratings,
+                comments: comments,
+                timestamp: new Date().toISOString()
+            };
+
+            // Generate file content (CSV format)
+            const fileContent = generateSubmissionFile(submission);
+
+            // Mark activation code as used
+            const usedCodes = JSON.parse(localStorage.getItem('usedActivationCodes') || '[]');
+            usedCodes.push(activationData.code);
+            localStorage.setItem('usedActivationCodes', JSON.stringify(usedCodes));
+
+            // Download the file
+            downloadFile(fileContent, `rating_evaluator_${submission.evaluatorSeat}_${Date.now()}.csv`);
+
+            showSuccess('評價已提交！檔案已下載，請將檔案提交至 repository。');
+            
+            // Reset form
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        }
+
+        function generateSubmissionFile(submission) {
+            // CSV format: target_seat,rating,comment
+            let csvContent = '目標座號,評分,銳評\n';
+            
+            for (let seat = 25; seat <= 46; seat++) {
+                const rating = submission.ratings[seat];
+                const comment = submission.comments[seat] || '';
+                csvContent += `${seat},${rating},"${comment.replace(/"/g, '""')}"\n`;
+            }
+            
+            // Add metadata row
+            csvContent += `\n評價者座號:,${submission.evaluatorSeat}\n`;
+            csvContent += `提交時間:,${submission.timestamp}\n`;
+            
+            return csvContent;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSurveyError(message) {
+            const errorDiv = document.getElementById('surveyError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
