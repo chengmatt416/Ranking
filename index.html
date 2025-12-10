@@ -257,7 +257,7 @@
             <div class="password-section" id="queryPasswordSection" style="display: none;">
                 <div class="input-group">
                     <label for="queryPasswordInput">查詢密碼（多次查詢需要）：</label>
-                    <input type="password" id="queryPasswordInput" placeholder="輸入查詢密碼">
+                    <input type="password" id="queryPasswordInput" placeholder="輸入查詢密碼或4位數通行碼">
                     <button onclick="queryWithPassword()">使用密碼查詢</button>
                 </div>
             </div>
@@ -265,7 +265,7 @@
             <div class="password-section" id="passwordSection" style="display: none;">
                 <div class="input-group">
                     <label for="viewPassword">查看銳評密碼：</label>
-                    <input type="password" id="viewPassword" placeholder="輸入密碼">
+                    <input type="password" id="viewPassword" placeholder="輸入密碼或4位數通行碼">
                     <button onclick="viewComment()">查看銳評</button>
                 </div>
             </div>
@@ -313,6 +313,63 @@
         let currentPassword = '';
         let queryPassword = '';
         const ADMIN_PASSWORD = 'RAN+';
+
+        // ===== Passcode System =====
+        // Simple encryption using XOR with a secret key
+        function encryptPasscode(passcode, feature) {
+            const secret = 'RANKING_PASSCODE_SECRET_2024';
+            const data = feature + ':' + passcode;
+            let encrypted = '';
+            for (let i = 0; i < data.length; i++) {
+                encrypted += String.fromCharCode(data.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
+            }
+            return btoa(encrypted); // Base64 encode
+        }
+
+        function decryptPasscode(encrypted, feature) {
+            try {
+                const secret = 'RANKING_PASSCODE_SECRET_2024';
+                const decoded = atob(encrypted);
+                let decrypted = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    decrypted += String.fromCharCode(decoded.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
+                }
+                if (decrypted.startsWith(feature + ':')) {
+                    return decrypted.substring(feature.length + 1);
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function savePasscode(feature, passcode) {
+            const encrypted = encryptPasscode(passcode, feature);
+            localStorage.setItem('passcode_' + feature, encrypted);
+        }
+
+        function getPasscode(feature) {
+            const encrypted = localStorage.getItem('passcode_' + feature);
+            if (!encrypted) return null;
+            return decryptPasscode(encrypted, feature);
+        }
+
+        function hasPasscode(feature) {
+            return localStorage.getItem('passcode_' + feature) !== null;
+        }
+
+        function showPasscodeSetup(feature, featureName) {
+            const passcode = prompt(`設定 ${featureName} 的四位數字通行碼（設定後可快速使用）：`, '');
+            if (passcode === null) return; // User cancelled
+            
+            if (!/^\d{4}$/.test(passcode)) {
+                alert('通行碼必須是4位數字！');
+                return;
+            }
+            
+            savePasscode(feature, passcode);
+            showSuccess(`${featureName} 通行碼已設定！下次可直接使用通行碼。`);
+        }
 
         // Load CSV data
         async function loadData() {
@@ -559,14 +616,35 @@
                 return;
             }
 
+            // Check if input is 4 digits - try passcode first
+            if (/^\d{4}$/.test(inputPassword)) {
+                const savedPasscode = getPasscode('query');
+                if (savedPasscode && inputPassword === savedPasscode) {
+                    // Passcode correct, allow query
+                    displayRatingResult(seatNumber);
+                    document.getElementById('queryPasswordInput').value = '';
+                    return;
+                }
+            }
+
+            // Try full password
             if (inputPassword !== queryPassword) {
-                showError('查詢密碼錯誤！');
+                showError('密碼或通行碼錯誤！');
                 return;
             }
 
             // Password correct, allow query
             displayRatingResult(seatNumber);
             document.getElementById('queryPasswordInput').value = '';
+            
+            // Ask user if they want to set up a passcode
+            if (!hasPasscode('query')) {
+                setTimeout(() => {
+                    if (confirm('是否設定四位數字通行碼以便下次快速查詢？')) {
+                        showPasscodeSetup('query', '多次查詢');
+                    }
+                }, 500);
+            }
         }
 
         function displayRatingResult(seatNumber) {
@@ -595,11 +673,31 @@
                 return;
             }
 
+            // Check if input is 4 digits - try passcode first
+            if (/^\d{4}$/.test(password)) {
+                const savedPasscode = getPasscode('comment');
+                if (savedPasscode && password === savedPasscode) {
+                    // Passcode correct, show comment
+                    const seatNumber = document.getElementById('seatNumber').value;
+                    const data = ratingsData[seatNumber];
+                    
+                    document.getElementById('commentText').textContent = data.comment;
+                    document.getElementById('commentSection').classList.remove('hidden');
+                    
+                    hideMessages();
+                    showSuccess('銳評已顯示！');
+                    document.getElementById('viewPassword').value = '';
+                    return;
+                }
+            }
+
+            // Try full password
             if (password !== currentPassword) {
-                showError('密碼錯誤！');
+                showError('密碼或通行碼錯誤！');
                 return;
             }
 
+            // Password correct, show comment
             const seatNumber = document.getElementById('seatNumber').value;
             const data = ratingsData[seatNumber];
             
@@ -608,6 +706,16 @@
             
             hideMessages();
             showSuccess('銳評已顯示！');
+            document.getElementById('viewPassword').value = '';
+            
+            // Ask user if they want to set up a passcode
+            if (!hasPasscode('comment')) {
+                setTimeout(() => {
+                    if (confirm('是否設定四位數字通行碼以便下次快速查看銳評？')) {
+                        showPasscodeSetup('comment', '銳評查看');
+                    }
+                }, 500);
+            }
         }
 
         function displayRankings() {
