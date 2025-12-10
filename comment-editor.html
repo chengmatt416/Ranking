@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>銳評編輯</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #f5576c;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .activation-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .editor-section {
+            display: none;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-size: 1.1em;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #f5576c;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2em;
+            background: #f5576c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #e04656;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #dc3545;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #28a745;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 5px solid #2196F3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #0c5460;
+            line-height: 1.6;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: #f5576c;
+            text-decoration: none;
+            font-size: 1em;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .evaluator-info {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .evaluator-info h3 {
+            font-size: 1.5em;
+        }
+
+        .comment-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+        }
+
+        .comment-item h4 {
+            color: #f5576c;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✍️ 銳評編輯</h1>
+        
+        <div class="activation-section" id="activationSection">
+            <div class="info-box">
+                <h4>📋 使用說明</h4>
+                <p>
+                    請輸入管理員提供的銳評編輯啟用碼。<br>
+                    此功能專門用於編輯銳評內容，與評分系統獨立。<br>
+                    每個啟用碼只能使用一次，且有使用期限。
+                </p>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            
+            <div class="input-group">
+                <label for="activationCode">啟用碼：</label>
+                <input type="text" id="activationCode" placeholder="輸入銳評編輯啟用碼">
+            </div>
+            
+            <button onclick="activateEditor()">啟用編輯器</button>
+            
+            <div class="back-link">
+                <a href="index.html">← 返回主頁</a>
+            </div>
+        </div>
+
+        <div class="editor-section" id="editorSection">
+            <div class="evaluator-info" id="evaluatorInfo">
+                <h3>編輯者座號：<span id="editorSeat">-</span></h3>
+                <p style="margin-top: 10px;">為所有座號（25-46）編輯銳評</p>
+            </div>
+
+            <div class="error-message" id="editorError"></div>
+            <div class="success-message" id="successMessage"></div>
+            
+            <div id="allCommentsContainer"></div>
+
+            <button onclick="submitComments()">提交所有銳評</button>
+            
+            <div class="back-link">
+                <a href="index.html">← 返回主頁</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activationData = null;
+
+        async function activateEditor() {
+            const code = document.getElementById('activationCode').value.trim();
+            
+            if (!code) {
+                showError('請輸入啟用碼！');
+                return;
+            }
+
+            try {
+                // Validate activation code
+                const validation = validateActivationCode(code);
+                
+                if (!validation.valid) {
+                    showError(validation.error);
+                    return;
+                }
+
+                activationData = validation.data;
+                
+                // Show editor section
+                document.getElementById('activationSection').style.display = 'none';
+                document.getElementById('editorSection').style.display = 'block';
+                document.getElementById('editorSeat').textContent = activationData.editorSeat;
+                
+                // Generate comment forms for all seats
+                generateAllCommentForms();
+                
+            } catch (error) {
+                showError('啟用碼格式錯誤！');
+            }
+        }
+
+        function generateAllCommentForms() {
+            const container = document.getElementById('allCommentsContainer');
+            container.innerHTML = '';
+            
+            // Generate forms for seats 25-46
+            for (let seat = 25; seat <= 46; seat++) {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'comment-item';
+                commentDiv.innerHTML = `
+                    <h4>座號 ${seat} 的銳評</h4>
+                    <div class="input-group">
+                        <textarea id="comment_${seat}" placeholder="請輸入對座號 ${seat} 的銳評..." oninput="updateCharCount(${seat})"></textarea>
+                        <div class="char-count" id="charCount_${seat}">0 字</div>
+                    </div>
+                `;
+                container.appendChild(commentDiv);
+            }
+        }
+
+        function updateCharCount(seat) {
+            const textarea = document.getElementById(`comment_${seat}`);
+            const charCount = document.getElementById(`charCount_${seat}`);
+            const length = textarea.value.length;
+            charCount.textContent = `${length} 字`;
+        }
+
+        function validateActivationCode(code) {
+            try {
+                // Decode activation code (Base64)
+                const decoded = atob(code);
+                const parts = decoded.split('|');
+                
+                if (parts.length !== 4) {
+                    return { valid: false, error: '啟用碼格式錯誤！' };
+                }
+
+                const [type, editorSeat, expiryTimestamp, signature] = parts;
+                
+                if (type !== 'COMMENT') {
+                    return { valid: false, error: '此啟用碼不是銳評編輯用！' };
+                }
+
+                // Verify signature (simple HMAC-like check)
+                const secret = 'RANKING_COMMENT_2024';
+                const expectedSignature = btoa(type + editorSeat + expiryTimestamp + secret).substring(0, 8);
+                
+                if (signature !== expectedSignature) {
+                    return { valid: false, error: '啟用碼無效！' };
+                }
+
+                // Check expiry
+                const expiryDate = new Date(parseInt(expiryTimestamp));
+                const now = new Date();
+                
+                if (now > expiryDate) {
+                    return { valid: false, error: '啟用碼已過期！' };
+                }
+
+                // Check if already used
+                const usedCodes = JSON.parse(localStorage.getItem('usedCommentCodes') || '[]');
+                if (usedCodes.includes(code)) {
+                    return { valid: false, error: '啟用碼已被使用！' };
+                }
+
+                return {
+                    valid: true,
+                    data: {
+                        editorSeat: editorSeat,
+                        expiryDate: expiryDate,
+                        code: code
+                    }
+                };
+                
+            } catch (error) {
+                return { valid: false, error: '啟用碼格式錯誤！' };
+            }
+        }
+
+        async function submitComments() {
+            // Collect all comments
+            const comments = {};
+            let hasAnyComment = false;
+            
+            for (let seat = 25; seat <= 46; seat++) {
+                const commentElement = document.getElementById(`comment_${seat}`);
+                const comment = commentElement ? commentElement.value.trim() : '';
+                comments[seat] = comment;
+                if (comment) {
+                    hasAnyComment = true;
+                }
+            }
+
+            if (!hasAnyComment) {
+                showEditorError('請至少填寫一個座號的銳評！');
+                return;
+            }
+
+            // Create submission data
+            const submission = {
+                editorSeat: activationData.editorSeat,
+                comments: comments,
+                timestamp: new Date().toISOString()
+            };
+
+            // Generate file content (CSV format)
+            const fileContent = generateCommentFile(submission);
+
+            // Mark activation code as used
+            const usedCodes = JSON.parse(localStorage.getItem('usedCommentCodes') || '[]');
+            usedCodes.push(activationData.code);
+            localStorage.setItem('usedCommentCodes', JSON.stringify(usedCodes));
+
+            // Download the file
+            downloadFile(fileContent, `comments_editor_${submission.editorSeat}_${Date.now()}.csv`);
+
+            showSuccess('銳評已提交！檔案已下載，請將檔案提交至 repository。');
+            
+            // Reset form
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        }
+
+        function generateCommentFile(submission) {
+            // CSV format: target_seat,comment
+            let csvContent = '目標座號,銳評\n';
+            
+            for (let seat = 25; seat <= 46; seat++) {
+                const comment = submission.comments[seat] || '';
+                csvContent += `${seat},"${comment.replace(/"/g, '""')}"\n`;
+            }
+            
+            // Add metadata row
+            csvContent += `\n編輯者座號:,${submission.editorSeat}\n`;
+            csvContent += `提交時間:,${submission.timestamp}\n`;
+            
+            return csvContent;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showEditorError(message) {
+            const errorDiv = document.getElementById('editorError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => errorDiv.style.display = 'none', 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

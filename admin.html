@@ -263,12 +263,37 @@
                 <p style="margin-top: 5px; font-size: 0.85em; color: #666;">此啟用碼可評價所有座號（25-46）</p>
             </div>
 
+            <div class="input-group" style="margin-top: 30px;">
+                <label for="commentEditorSeat">銳評編輯啟用碼生成：</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="font-size: 0.9em; font-weight: normal;">編輯者座號</label>
+                        <input type="number" id="commentEditorSeat" placeholder="編輯者座號" min="1" max="50">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.9em; font-weight: normal;">有效天數</label>
+                        <input type="number" id="commentValidDays" placeholder="有效天數" value="7" min="1" max="365">
+                    </div>
+                </div>
+            </div>
+            
+            <button class="generate-btn" onclick="generateCommentActivationCode()">生成銳評編輯啟用碼</button>
+            
+            <div class="password-display" id="commentActivationCodeDisplay" style="display: none;">
+                <h3>銳評編輯啟用碼</h3>
+                <div class="password-value" id="commentActivationCodeValue" style="font-size: 1.2em; word-break: break-all;">-</div>
+                <p style="margin-top: 10px; font-size: 0.9em;">有效期限：<span id="commentActivationExpiry">-</span></p>
+                <p style="margin-top: 5px; font-size: 0.9em;">編輯者座號：<span id="commentActivationEditor">-</span></p>
+                <p style="margin-top: 5px; font-size: 0.85em; color: #666;">此啟用碼可編輯所有座號（25-46）的銳評</p>
+            </div>
+
             <div class="info-box">
                 <h4>📋 使用說明</h4>
                 <p>
                     <strong>銳評密碼：</strong>用於查看銳評內容<br>
                     <strong>查詢密碼：</strong>用於允許使用者多次查詢評價<br>
-                    <strong>問卷啟用碼：</strong>用於填寫評價問卷，每個啟用碼只能使用一次<br><br>
+                    <strong>問卷啟用碼：</strong>用於填寫評價問卷，每個啟用碼只能使用一次<br>
+                    <strong>銳評編輯啟用碼：</strong>用於編輯銳評內容，與評分系統獨立<br><br>
                     1. 點擊「自動生成密碼」可生成隨機密碼<br>
                     2. 或手動輸入密碼後點擊「設定密碼」<br>
                     3. 系統會自動下載新的 data.csv 檔案<br>
@@ -276,7 +301,8 @@
                     5. 密碼將在所有裝置上同步生效<br>
                     6. 將密碼分享給需要的使用者<br>
                     7. 生成問卷啟用碼後，將啟用碼提供給評分者填寫問卷<br>
-                    8. 評分者提交後會下載評分檔案，將檔案添加至 repository
+                    8. 評分者提交後會下載評分檔案，將檔案添加至 repository<br>
+                    9. 銳評編輯啟用碼用於單獨編輯銳評，不涉及評分
                 </p>
             </div>
 
@@ -486,6 +512,38 @@
             document.getElementById('activationCodeDisplay').style.display = 'block';
 
             showSuccess(`問卷啟用碼已生成！有效期限：${validDays} 天`);
+        }
+
+        function generateCommentActivationCode() {
+            const editorSeat = document.getElementById('commentEditorSeat').value;
+            const validDays = parseInt(document.getElementById('commentValidDays').value) || 7;
+
+            if (!editorSeat) {
+                alert('請輸入編輯者座號！');
+                return;
+            }
+
+            // Calculate expiry timestamp
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + validDays);
+            const expiryTimestamp = expiryDate.getTime().toString();
+
+            // Generate signature (simple HMAC-like)
+            const secret = 'RANKING_COMMENT_2024';
+            const type = 'COMMENT';
+            const signature = btoa(type + editorSeat + expiryTimestamp + secret).substring(0, 8);
+
+            // Create activation code: COMMENT|editorSeat|expiryTimestamp|signature
+            const codeData = `${type}|${editorSeat}|${expiryTimestamp}|${signature}`;
+            const activationCode = btoa(codeData);
+
+            // Display the activation code
+            document.getElementById('commentActivationCodeValue').textContent = activationCode;
+            document.getElementById('commentActivationExpiry').textContent = expiryDate.toLocaleString('zh-TW');
+            document.getElementById('commentActivationEditor').textContent = editorSeat;
+            document.getElementById('commentActivationCodeDisplay').style.display = 'block';
+
+            showSuccess(`銳評編輯啟用碼已生成！有效期限：${validDays} 天`);
         }
 
         function loadCurrentPassword() {
