@@ -394,7 +394,7 @@
                 if (lines[i].startsWith('密碼,')) {
                     // Update query password (third column)
                     const parts = lines[i].split(',');
-                    const existingCommentPassword = parts[1] || 'PASSWORD_PLACEHOLDER';
+                    const existingCommentPassword = parts[1] || '';
                     lines[i] = '密碼,' + existingCommentPassword + ',' + newQueryPassword;
                     passwordRowFound = true;
                     break;
@@ -403,7 +403,7 @@
             
             // If password row doesn't exist, add it
             if (!passwordRowFound) {
-                lines.push('密碼,PASSWORD_PLACEHOLDER,' + newQueryPassword);
+                lines.push('密碼,,' + newQueryPassword);
             }
             
             csvData = lines.join('\n');
@@ -432,7 +432,7 @@
         }
 
         function loadCurrentPassword() {
-            if (currentPassword && currentPassword !== 'PASSWORD_PLACEHOLDER') {
+            if (currentPassword && currentPassword !== '') {
                 document.getElementById('currentPasswordValue').textContent = currentPassword;
                 document.getElementById('currentPasswordDisplay').style.display = 'block';
             } else {

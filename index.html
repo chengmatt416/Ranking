@@ -444,16 +444,24 @@
             localStorage.removeItem(queryKey);
         }
 
-        function queryRating() {
-            const seatNumber = document.getElementById('seatNumber').value;
-            
+        function validateQuery(seatNumber) {
             if (!seatNumber || seatNumber < 25 || seatNumber > 46) {
                 showError('請輸入有效的座號 (25-46)');
-                return;
+                return false;
             }
 
             if (!ratingsData || !ratingsData[seatNumber]) {
                 showError('找不到該座號的資料');
+                return false;
+            }
+
+            return true;
+        }
+
+        function queryRating() {
+            const seatNumber = document.getElementById('seatNumber').value;
+            
+            if (!validateQuery(seatNumber)) {
                 return;
             }
 
@@ -471,13 +479,7 @@
             const seatNumber = document.getElementById('seatNumber').value;
             const inputPassword = document.getElementById('queryPasswordInput').value;
             
-            if (!seatNumber || seatNumber < 25 || seatNumber > 46) {
-                showError('請輸入有效的座號 (25-46)');
-                return;
-            }
-
-            if (!ratingsData || !ratingsData[seatNumber]) {
-                showError('找不到該座號的資料');
+            if (!validateQuery(seatNumber)) {
                 return;
             }
 
