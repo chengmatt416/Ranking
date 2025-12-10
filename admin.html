@@ -478,6 +478,7 @@
         let passcodeBuffer = '';
         let passcodeSetupCallback = null;
         let passcodeFeatureName = '';
+        let passcodeAutoConfirmTimeout = null;
 
         // Simple encryption using XOR with a secret key
         function encryptPasscode(passcode, feature) {
@@ -538,6 +539,12 @@
         }
 
         function passcodeKeyPress(key) {
+            // Clear any pending auto-confirm
+            if (passcodeAutoConfirmTimeout) {
+                clearTimeout(passcodeAutoConfirmTimeout);
+                passcodeAutoConfirmTimeout = null;
+            }
+            
             if (key === 'clear') {
                 passcodeBuffer = '';
             } else if (key === 'back') {
@@ -550,8 +557,10 @@
             
             // Auto-confirm when 4 digits are entered
             if (passcodeBuffer.length === 4) {
-                setTimeout(() => {
-                    confirmPasscodeSetup();
+                passcodeAutoConfirmTimeout = setTimeout(() => {
+                    if (passcodeBuffer.length === 4) {  // Double-check buffer still has 4 digits
+                        confirmPasscodeSetup();
+                    }
                 }, 300);
             }
         }
@@ -594,6 +603,10 @@
             document.getElementById('passcodeModal').classList.remove('active');
             passcodeBuffer = '';
             passcodeSetupCallback = null;
+            if (passcodeAutoConfirmTimeout) {
+                clearTimeout(passcodeAutoConfirmTimeout);
+                passcodeAutoConfirmTimeout = null;
+            }
             updatePasscodeDisplay();
         }
 
