@@ -1278,8 +1278,10 @@
             e.preventDefault();
             // Stash the event so it can be triggered later
             deferredPrompt = e;
-            // Show the install banner
-            installBanner.classList.add('show');
+            // Show the install banner only if user hasn't dismissed it before
+            if (localStorage.getItem('installBannerDismissed') !== 'true') {
+                installBanner.classList.add('show');
+            }
         });
 
         // Handle install button click
@@ -1304,16 +1306,6 @@
             // Remember that user dismissed the banner
             localStorage.setItem('installBannerDismissed', 'true');
         });
-
-        // Check if user previously dismissed the banner
-        if (localStorage.getItem('installBannerDismissed') === 'true') {
-            // Don't show banner automatically, but still allow install if event fires
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                // Don't show banner automatically
-            });
-        }
 
         // Listen for successful installation
         window.addEventListener('appinstalled', () => {

@@ -1,5 +1,6 @@
 // Service Worker for 座號評價查詢系統
-const CACHE_NAME = 'ranking-system-v1';
+const CACHE_VERSION = '1.0.0';
+const CACHE_NAME = `ranking-system-v${CACHE_VERSION}`;
 const urlsToCache = [
   '/',
   '/index.html',
@@ -74,10 +75,18 @@ self.addEventListener('fetch', (event) => {
 
           return response;
         }).catch(() => {
-          // Network request failed, try to return cached index page for navigation
+          // Network request failed, try to return appropriate cached fallback
           if (event.request.mode === 'navigate') {
             return caches.match('/index.html');
           }
+          // For other requests, return a basic offline response
+          return new Response('Offline - resource not available', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({
+              'Content-Type': 'text/plain'
+            })
+          });
         });
       })
   );
