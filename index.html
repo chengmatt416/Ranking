@@ -241,9 +241,162 @@
         .hidden {
             display: none;
         }
+
+        /* Passcode Modal */
+        .passcode-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .passcode-modal.active {
+            display: flex;
+        }
+
+        .passcode-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .passcode-content h2 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        .passcode-content p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .passcode-display {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .passcode-digit {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .passcode-digit.filled {
+            background: #667eea;
+            color: white;
+        }
+
+        .passcode-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .passcode-key {
+            padding: 20px;
+            font-size: 1.8em;
+            font-weight: bold;
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #333;
+        }
+
+        .passcode-key:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .passcode-key:active {
+            transform: scale(0.95);
+        }
+
+        .passcode-key.wide {
+            grid-column: span 3;
+        }
+
+        .passcode-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .passcode-actions button {
+            flex: 1;
+            padding: 15px;
+            font-size: 1.1em;
+        }
+
+        .passcode-actions button.cancel {
+            background: #6c757d;
+        }
+
+        .passcode-actions button.cancel:hover {
+            background: #5a6268;
+        }
     </style>
 </head>
 <body>
+    <!-- Passcode Modal -->
+    <div class="passcode-modal" id="passcodeModal">
+        <div class="passcode-content">
+            <h2>🔢 設定通行碼</h2>
+            <p id="passcodeModalMessage">請設定四位數字通行碼</p>
+            
+            <div class="passcode-display">
+                <div class="passcode-digit" id="digit1"></div>
+                <div class="passcode-digit" id="digit2"></div>
+                <div class="passcode-digit" id="digit3"></div>
+                <div class="passcode-digit" id="digit4"></div>
+            </div>
+
+            <div class="passcode-keypad">
+                <button class="passcode-key" onclick="passcodeKeyPress('1')">1</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('2')">2</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('3')">3</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('4')">4</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('5')">5</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('6')">6</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('7')">7</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('8')">8</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('9')">9</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('clear')">清除</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('0')">0</button>
+                <button class="passcode-key" onclick="passcodeKeyPress('back')">←</button>
+            </div>
+
+            <div class="passcode-actions">
+                <button class="cancel" onclick="cancelPasscodeSetup()">取消</button>
+                <button onclick="confirmPasscodeSetup()">確認</button>
+            </div>
+        </div>
+    </div>
     <div class="container">
         <h1>🎓 座號評價查詢系統</h1>
         
@@ -257,7 +410,7 @@
             <div class="password-section" id="queryPasswordSection" style="display: none;">
                 <div class="input-group">
                     <label for="queryPasswordInput">查詢密碼（多次查詢需要）：</label>
-                    <input type="password" id="queryPasswordInput" placeholder="輸入查詢密碼">
+                    <input type="password" id="queryPasswordInput" placeholder="輸入查詢密碼或4位數通行碼">
                     <button onclick="queryWithPassword()">使用密碼查詢</button>
                 </div>
             </div>
@@ -265,7 +418,7 @@
             <div class="password-section" id="passwordSection" style="display: none;">
                 <div class="input-group">
                     <label for="viewPassword">查看銳評密碼：</label>
-                    <input type="password" id="viewPassword" placeholder="輸入密碼">
+                    <input type="password" id="viewPassword" placeholder="輸入密碼或4位數通行碼">
                     <button onclick="viewComment()">查看銳評</button>
                 </div>
             </div>
@@ -313,6 +466,146 @@
         let currentPassword = '';
         let queryPassword = '';
         const ADMIN_PASSWORD = 'RAN+';
+
+        // ===== Passcode System =====
+        let passcodeBuffer = '';
+        let passcodeSetupCallback = null;
+        let passcodeFeatureName = '';
+        let passcodeAutoConfirmTimeout = null;
+
+        // Simple XOR-based obfuscation for passcode storage
+        // NOTE: This is client-side obfuscation, not true encryption.
+        // The secret is visible in source code. This provides basic protection
+        // against casual viewing of localStorage, but is not cryptographically secure.
+        function encryptPasscode(passcode, feature) {
+            const secret = 'RANKING_PASSCODE_SECRET_2024';
+            const data = feature + ':' + passcode;
+            let encrypted = '';
+            for (let i = 0; i < data.length; i++) {
+                encrypted += String.fromCharCode(data.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
+            }
+            return btoa(encrypted); // Base64 encode
+        }
+
+        function decryptPasscode(encrypted, feature) {
+            try {
+                const secret = 'RANKING_PASSCODE_SECRET_2024';
+                const decoded = atob(encrypted);
+                let decrypted = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    decrypted += String.fromCharCode(decoded.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
+                }
+                if (decrypted.startsWith(feature + ':')) {
+                    return decrypted.substring(feature.length + 1);
+                }
+                return null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function savePasscode(feature, passcode) {
+            const encrypted = encryptPasscode(passcode, feature);
+            localStorage.setItem('passcode_' + feature, encrypted);
+        }
+
+        function getPasscode(feature) {
+            const encrypted = localStorage.getItem('passcode_' + feature);
+            if (!encrypted) return null;
+            return decryptPasscode(encrypted, feature);
+        }
+
+        function hasPasscode(feature) {
+            return localStorage.getItem('passcode_' + feature) !== null;
+        }
+
+        function showPasscodeSetup(feature, featureName) {
+            passcodeBuffer = '';
+            passcodeFeatureName = featureName;
+            passcodeSetupCallback = (passcode) => {
+                if (passcode) {
+                    savePasscode(feature, passcode);
+                    showSuccess(`${featureName} 通行碼已設定！下次可直接使用通行碼。`);
+                }
+            };
+            
+            document.getElementById('passcodeModalMessage').textContent = `請為「${featureName}」設定四位數字通行碼`;
+            updatePasscodeDisplay();
+            document.getElementById('passcodeModal').classList.add('active');
+        }
+
+        function passcodeKeyPress(key) {
+            // Clear any pending auto-confirm
+            if (passcodeAutoConfirmTimeout) {
+                clearTimeout(passcodeAutoConfirmTimeout);
+                passcodeAutoConfirmTimeout = null;
+            }
+            
+            if (key === 'clear') {
+                passcodeBuffer = '';
+            } else if (key === 'back') {
+                passcodeBuffer = passcodeBuffer.slice(0, -1);
+            } else if (passcodeBuffer.length < 4 && /^\d$/.test(key)) {
+                // Only allow single digits (0-9)
+                passcodeBuffer += key;
+            }
+            
+            updatePasscodeDisplay();
+            
+            // Auto-confirm when 4 digits are entered
+            if (passcodeBuffer.length === 4) {
+                passcodeAutoConfirmTimeout = setTimeout(() => {
+                    if (passcodeBuffer.length === 4) {  // Double-check buffer still has 4 digits
+                        confirmPasscodeSetup();
+                    }
+                }, 300);
+            }
+        }
+
+        function updatePasscodeDisplay() {
+            for (let i = 1; i <= 4; i++) {
+                const digitEl = document.getElementById('digit' + i);
+                if (i <= passcodeBuffer.length) {
+                    digitEl.textContent = '●';
+                    digitEl.classList.add('filled');
+                } else {
+                    digitEl.textContent = '';
+                    digitEl.classList.remove('filled');
+                }
+            }
+        }
+
+        function confirmPasscodeSetup() {
+            if (passcodeBuffer.length !== 4) {
+                alert('請輸入完整的4位數字！');
+                return;
+            }
+            
+            const passcode = passcodeBuffer;
+            closePasscodeModal();
+            
+            if (passcodeSetupCallback) {
+                passcodeSetupCallback(passcode);
+            }
+        }
+
+        function cancelPasscodeSetup() {
+            closePasscodeModal();
+            if (passcodeSetupCallback) {
+                passcodeSetupCallback(null);
+            }
+        }
+
+        function closePasscodeModal() {
+            document.getElementById('passcodeModal').classList.remove('active');
+            passcodeBuffer = '';
+            passcodeSetupCallback = null;
+            if (passcodeAutoConfirmTimeout) {
+                clearTimeout(passcodeAutoConfirmTimeout);
+                passcodeAutoConfirmTimeout = null;
+            }
+            updatePasscodeDisplay();
+        }
 
         // Load CSV data
         async function loadData() {
@@ -559,14 +852,35 @@
                 return;
             }
 
+            // Check if input is 4 digits - try passcode first
+            if (/^\d{4}$/.test(inputPassword)) {
+                const savedPasscode = getPasscode('query');
+                if (savedPasscode && inputPassword === savedPasscode) {
+                    // Passcode correct, allow query
+                    displayRatingResult(seatNumber);
+                    document.getElementById('queryPasswordInput').value = '';
+                    return;
+                }
+            }
+
+            // Try full password
             if (inputPassword !== queryPassword) {
-                showError('查詢密碼錯誤！');
+                showError('密碼或通行碼錯誤！');
                 return;
             }
 
             // Password correct, allow query
             displayRatingResult(seatNumber);
             document.getElementById('queryPasswordInput').value = '';
+            
+            // Ask user if they want to set up a passcode
+            if (!hasPasscode('query')) {
+                setTimeout(() => {
+                    if (confirm('是否設定四位數字通行碼以便下次快速查詢？')) {
+                        showPasscodeSetup('query', '多次查詢');
+                    }
+                }, 500);
+            }
         }
 
         function displayRatingResult(seatNumber) {
@@ -595,11 +909,31 @@
                 return;
             }
 
+            // Check if input is 4 digits - try passcode first
+            if (/^\d{4}$/.test(password)) {
+                const savedPasscode = getPasscode('comment');
+                if (savedPasscode && password === savedPasscode) {
+                    // Passcode correct, show comment
+                    const seatNumber = document.getElementById('seatNumber').value;
+                    const data = ratingsData[seatNumber];
+                    
+                    document.getElementById('commentText').textContent = data.comment;
+                    document.getElementById('commentSection').classList.remove('hidden');
+                    
+                    hideMessages();
+                    showSuccess('銳評已顯示！');
+                    document.getElementById('viewPassword').value = '';
+                    return;
+                }
+            }
+
+            // Try full password
             if (password !== currentPassword) {
-                showError('密碼錯誤！');
+                showError('密碼或通行碼錯誤！');
                 return;
             }
 
+            // Password correct, show comment
             const seatNumber = document.getElementById('seatNumber').value;
             const data = ratingsData[seatNumber];
             
@@ -608,6 +942,16 @@
             
             hideMessages();
             showSuccess('銳評已顯示！');
+            document.getElementById('viewPassword').value = '';
+            
+            // Ask user if they want to set up a passcode
+            if (!hasPasscode('comment')) {
+                setTimeout(() => {
+                    if (confirm('是否設定四位數字通行碼以便下次快速查看銳評？')) {
+                        showPasscodeSetup('comment', '銳評查看');
+                    }
+                }, 500);
+            }
         }
 
         function displayRankings() {
