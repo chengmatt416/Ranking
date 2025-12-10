@@ -313,109 +313,53 @@
         let currentPassword = '';
         let queryPassword = '';
         const ADMIN_PASSWORD = 'RAN+';
-        const ENCRYPTION_KEY = 'RANKING_SYSTEM_2024_SECRET_KEY_DO_NOT_SHARE';
-
-        // Simple encryption/decryption functions
-        function encryptData(text) {
-            let encrypted = '';
-            for (let i = 0; i < text.length; i++) {
-                const charCode = text.charCodeAt(i);
-                const keyChar = ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length);
-                encrypted += String.fromCharCode(charCode ^ keyChar);
-            }
-            return btoa(encrypted); // Base64 encode
-        }
-
-        function decryptData(encryptedText) {
-            try {
-                const encrypted = atob(encryptedText); // Base64 decode
-                let decrypted = '';
-                for (let i = 0; i < encrypted.length; i++) {
-                    const charCode = encrypted.charCodeAt(i);
-                    const keyChar = ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length);
-                    decrypted += String.fromCharCode(charCode ^ keyChar);
-                }
-                return decrypted;
-            } catch (error) {
-                throw new Error('解密失敗');
-            }
-        }
 
         // Load CSV data
         async function loadData() {
             try {
-                // Try to load encrypted data first (new format)
-                try {
-                    const [ratingsResponse, commentsResponse, passwordsResponse] = await Promise.all([
-                        fetch('data.enc.txt'),
-                        fetch('comments.csv'),
-                        fetch('passwords.txt')
-                    ]);
-                    
-                    if (ratingsResponse.ok) {
-                        // New encrypted format
-                        const encryptedRatings = await ratingsResponse.text();
-                        const ratingsText = decryptData(encryptedRatings.trim());
-                        parseRatingsCSV(ratingsText);
-                        
-                        const commentsText = await commentsResponse.text();
-                        parseCommentsCSV(commentsText);
-                        
-                        const passwordsText = await passwordsResponse.text();
-                        parsePasswordsFile(passwordsText);
-                        
-                        displayRankings();
-                        return;
-                    }
-                } catch (encError) {
-                    // Fall back to old format
-                }
-                
-                // Fallback to old data.csv format
+                // Load ratings from data.csv
                 const response = await fetch('data.csv');
                 const text = await response.text();
                 parseCSV(text);
+                
+                // Load and merge all comment files from manifest
+                await loadAllComments();
+                
                 displayRankings();
             } catch (error) {
                 showError('無法載入資料檔案');
             }
         }
 
-        function parseRatingsCSV(text) {
-            const lines = text.trim().split('\n');
-            const headers = lines[0].split(',');
-            
-            ratingsData = {};
-            
-            // Parse seat data rows
-            for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',');
-                const seatNumStr = values[0];
-                const seatNum = parseInt(seatNumStr);
+        async function loadAllComments() {
+            try {
+                // Load manifest of comment files
+                const manifestResponse = await fetch('comments/manifest.json');
+                const manifest = await manifestResponse.json();
                 
-                // Skip if not a valid seat number (25-46)
-                if (isNaN(seatNum) || seatNum < 25 || seatNum > 46) continue;
-                
-                ratingsData[seatNum] = {
-                    ratings: [],
-                    comment: ''
-                };
-                
-                // Parse ratings from each evaluator (columns 1 onwards)
-                for (let j = 1; j < values.length; j++) {
-                    const rating = parseInt(values[j]);
-                    ratingsData[seatNum].ratings.push(isNaN(rating) ? 0 : rating);
+                // Load each comment file and merge
+                for (const filename of manifest.comment_files) {
+                    try {
+                        const commentResponse = await fetch(`comments/${filename}`);
+                        const commentText = await commentResponse.text();
+                        mergeComments(commentText);
+                    } catch (error) {
+                        console.log(`Could not load ${filename}:`, error);
+                    }
                 }
+            } catch (error) {
+                // Manifest doesn't exist or error loading - no comments to merge
+                console.log('No comment manifest found or error loading comments');
             }
         }
 
-        function parseCommentsCSV(text) {
+        function mergeComments(text) {
             const lines = text.trim().split('\n');
             
             // Skip header row if exists
             const startRow = lines[0] && lines[0].includes('座號') ? 1 : 0;
             
-            // Parse comments (format: seat_number,comment)
+            // Parse and merge comments (format: seat_number,comment)
             for (let i = startRow; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
@@ -436,19 +380,12 @@
                     comment = comment.replace(/""/g, '"');
                 }
                 
-                ratingsData[seatNum].comment = comment;
-            }
-        }
-
-        function parsePasswordsFile(text) {
-            const lines = text.trim().split('\n');
-            for (const line of lines) {
-                const [key, value] = line.split('=');
-                if (key && value) {
-                    if (key.trim() === 'VIEW_PASSWORD') {
-                        currentPassword = value.trim();
-                    } else if (key.trim() === 'QUERY_PASSWORD') {
-                        queryPassword = value.trim();
+                // Merge comments - concatenate with existing if both exist
+                if (comment) {
+                    if (ratingsData[seatNum].comment) {
+                        ratingsData[seatNum].comment += ' | ' + comment;
+                    } else {
+                        ratingsData[seatNum].comment = comment;
                     }
                 }
             }
