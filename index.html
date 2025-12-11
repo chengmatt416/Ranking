@@ -1304,10 +1304,18 @@
             return true;
         }
 
-        function queryRating() {
+        async function queryRating() {
             const seatNumber = document.getElementById('seatNumber').value;
             
             if (!validateQuery(seatNumber)) {
+                return;
+            }
+
+            // Check for high-security no-auth mode first
+            const highSecPassword = await getPasswordInHighSecurityMode('query');
+            if (highSecPassword && highSecPassword === queryPassword) {
+                // Within high-security no-auth period, allow query directly
+                await displayRatingResult(seatNumber);
                 return;
             }
 
@@ -1318,7 +1326,7 @@
                 return;
             }
 
-            displayRatingResult(seatNumber);
+            await displayRatingResult(seatNumber);
         }
 
         async function queryWithPassword() {
@@ -1332,8 +1340,7 @@
                     return;
                 }
                 
-                displayRatingResult(seatNumber);
-                showSuccess('查詢成功！（高機密模式：免驗證時限內）');
+                await displayRatingResult(seatNumber);
                 return;
             }
             
@@ -1359,7 +1366,7 @@
                 const savedPasscode = getPasscode('query');
                 if (savedPasscode && inputPassword === savedPasscode) {
                     // Passcode correct, allow query
-                    displayRatingResult(seatNumber);
+                    await displayRatingResult(seatNumber);
                     document.getElementById('queryPasswordInput').value = '';
                     return;
                 }
@@ -1368,7 +1375,7 @@
                 const sharedPassword = await getSharedPassword('query', inputPassword);
                 if (sharedPassword && sharedPassword === queryPassword) {
                     // Shared password correct, allow query
-                    displayRatingResult(seatNumber);
+                    await displayRatingResult(seatNumber);
                     document.getElementById('queryPasswordInput').value = '';
                     return;
                 }
@@ -1381,7 +1388,7 @@
             }
 
             // Password correct, allow query
-            displayRatingResult(seatNumber);
+            await displayRatingResult(seatNumber);
             document.getElementById('queryPasswordInput').value = '';
             
             // Ask user if they want to set up a passcode
@@ -1394,7 +1401,7 @@
             }
         }
 
-        function displayRatingResult(seatNumber) {
+        async function displayRatingResult(seatNumber) {
             const data = ratingsData[seatNumber];
             const rating = calculateAverage(data.ratings);
             const avgValue = (data.ratings.reduce((a, b) => a + b, 0) / data.ratings.length).toFixed(2);
@@ -1405,11 +1412,30 @@
             document.getElementById('ratingDetail').textContent = `平均分數: ${avgValue}\n${counts.L}個人評L，${counts.S}個人評S，${counts.A}個人評A，${counts.X}個人評X`;
             
             document.getElementById('resultSection').style.display = 'block';
-            document.getElementById('passwordSection').style.display = 'block';
-            document.getElementById('commentSection').classList.add('hidden');
             
-            hideMessages();
-            showSuccess('查詢成功！');
+            // Check if in high security mode with comment password - if so, show comment directly
+            const highSecPassword = await getPasswordInHighSecurityMode('comment');
+            const isHighSecurityMode = highSecPassword && highSecPassword === currentPassword;
+            
+            if (isHighSecurityMode) {
+                // Within high-security no-auth period, show comment directly without password input
+                document.getElementById('passwordSection').style.display = 'none';
+                
+                if (data.comment) {
+                    document.getElementById('commentText').textContent = data.comment;
+                    document.getElementById('commentSection').classList.remove('hidden');
+                }
+                
+                hideMessages();
+                showSuccess('查詢成功！銳評已顯示（高機密模式：免驗證時限內）');
+            } else {
+                // Show password section for non-high-security mode or when not in no-auth period
+                document.getElementById('passwordSection').style.display = 'block';
+                document.getElementById('commentSection').classList.add('hidden');
+                
+                hideMessages();
+                showSuccess('查詢成功！');
+            }
         }
 
         async function viewComment() {
