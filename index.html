@@ -1523,6 +1523,9 @@
                 if (url.origin === currentOrigin && url.pathname.endsWith('password-receive.html')) {
                     showSuccess('✅ 啟用碼有效！正在開啟...');
                     
+                    // Hide the activation code input section after use
+                    document.getElementById('activationCodeSection').style.display = 'none';
+                    
                     // Navigate to the password-receive page
                     setTimeout(() => {
                         window.location.href = url.href;
