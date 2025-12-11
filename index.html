@@ -954,6 +954,74 @@
             document.removeEventListener('keydown', handlePasscodePhysicalKeyboard);
         }
 
+        // Check if within high-security no-auth period
+        function isWithinHighSecurityPeriod(type) {
+            try {
+                // Check all possible share activation keys
+                const keys = Object.keys(localStorage).filter(key => key.startsWith('share_activated_'));
+                
+                for (const key of keys) {
+                    const activationTime = parseInt(localStorage.getItem(key) || '0');
+                    if (activationTime === 0) continue;
+                    
+                    // Extract shareId from the key (format: share_activated_{shareId})
+                    const shareId = key.replace('share_activated_', '');
+                    
+                    // Check if this share includes the requested password type
+                    const hasPassword = localStorage.getItem('shared_' + type + '_password');
+                    if (!hasPassword) continue;
+                    
+                    // Check expiry for this specific share and type
+                    const expiryKey = 'passcode_expiry_' + type + '_' + shareId;
+                    const expiryTime = parseInt(localStorage.getItem(expiryKey) || '0');
+                    
+                    if (expiryTime > 0 && Date.now() < expiryTime) {
+                        // Still within no-auth period for this share
+                        return true;
+                    }
+                }
+                
+                return false;
+            } catch (error) {
+                console.error('Error checking high-security period:', error);
+                return false;
+            }
+        }
+        
+        // Get password automatically if within high-security no-auth period
+        async function getPasswordInHighSecurityMode(type) {
+            try {
+                if (!isWithinHighSecurityPeriod(type)) {
+                    return null;
+                }
+                
+                // Get the stored encrypted password
+                const encryptedPassword = localStorage.getItem('shared_' + type + '_password');
+                if (!encryptedPassword) {
+                    return null;
+                }
+                
+                // Get the stored passcode (encrypted)
+                const encryptedPasscode = localStorage.getItem('passcode_' + type);
+                if (!encryptedPasscode) {
+                    return null;
+                }
+                
+                // Decrypt the passcode
+                const passcode = decryptPasscode(encryptedPasscode, type);
+                if (!passcode) {
+                    return null;
+                }
+                
+                // Decrypt the password using the passcode
+                const decrypted = await decryptSharedData(encryptedPassword, passcode);
+                return decrypted;
+            } catch (error) {
+                console.error('Error getting password in high-security mode:', error);
+                return null;
+            }
+        }
+
         // Shared password decryption
         async function getSharedPassword(type, passcode) {
             try {
@@ -1251,10 +1319,30 @@
         }
 
         async function queryWithPassword() {
+            // Check for high-security no-auth mode first
+            const highSecPassword = await getPasswordInHighSecurityMode('query');
+            if (highSecPassword && highSecPassword === queryPassword) {
+                // Within high-security no-auth period, allow query directly
+                const seatNumber = document.getElementById('seatNumber').value;
+                
+                if (!validateQuery(seatNumber)) {
+                    return;
+                }
+                
+                displayRatingResult(seatNumber);
+                showSuccess('查詢成功！（高機密模式：免驗證時限內）');
+                return;
+            }
+            
             const seatNumber = document.getElementById('seatNumber').value;
             const inputPassword = document.getElementById('queryPasswordInput').value;
             
             if (!validateQuery(seatNumber)) {
+                return;
+            }
+            
+            if (!inputPassword) {
+                showError('請輸入查詢密碼或通行碼！');
                 return;
             }
 
@@ -1322,7 +1410,27 @@
         }
 
         async function viewComment() {
+            // Check for high-security no-auth mode first
+            const highSecPassword = await getPasswordInHighSecurityMode('comment');
+            if (highSecPassword && highSecPassword === currentPassword) {
+                // Within high-security no-auth period, show comment directly
+                const seatNumber = document.getElementById('seatNumber').value;
+                const data = ratingsData[seatNumber];
+                
+                document.getElementById('commentText').textContent = data.comment;
+                document.getElementById('commentSection').classList.remove('hidden');
+                
+                hideMessages();
+                showSuccess('銳評已顯示！（高機密模式：免驗證時限內）');
+                return;
+            }
+            
             const password = document.getElementById('viewPassword').value;
+            
+            if (!password) {
+                showError('請輸入密碼或通行碼！');
+                return;
+            }
             
             if (!currentPassword) {
                 showError('尚未設定查看密碼，請聯絡管理員');
