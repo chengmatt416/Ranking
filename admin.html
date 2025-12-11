@@ -488,6 +488,13 @@
     <script src="auth.js"></script>
     <script src="passwords.js"></script>
     <script>
+        // Version check for app update
+        const CURRENT_VERSION = 2;
+        const storedVersion = parseInt(localStorage.getItem('app_version') || '1');
+        if (storedVersion < CURRENT_VERSION) {
+            localStorage.setItem('app_version', CURRENT_VERSION.toString());
+        }
+        
         let isLoggedIn = false;
         let csvData = null;
         let currentPassword = '';

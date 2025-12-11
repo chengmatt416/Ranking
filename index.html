@@ -598,6 +598,38 @@
 
     <script src="auth.js"></script>
     <script>
+        // Version check and migration for re-authentication requirement
+        const CURRENT_VERSION = 2; // Version 2 includes enhanced security features
+        const storedVersion = parseInt(localStorage.getItem('app_version') || '1');
+        
+        if (storedVersion < CURRENT_VERSION) {
+            // Clear old authentication data to force re-authentication
+            const keysToRemove = [
+                'shared_comment_password',
+                'shared_query_password',
+                'passcode_comment',
+                'passcode_query'
+            ];
+            
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // Clear all passcode expiry keys
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('passcode_expiry_') || key.startsWith('share_activated_')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            // Update version
+            localStorage.setItem('app_version', CURRENT_VERSION.toString());
+            
+            console.log('App updated to version', CURRENT_VERSION, '- authentication data cleared');
+        }
+        
         let ratingsData = null;
         let currentPassword = '';
         let queryPassword = '';
