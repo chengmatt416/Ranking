@@ -486,6 +486,7 @@
     </div>
 
     <script src="auth.js"></script>
+    <script src="passwords.js"></script>
     <script>
         let isLoggedIn = false;
         let csvData = null;
@@ -653,14 +654,24 @@
                 const line = lines[i];
                 if (line.startsWith('密碼,')) {
                     const parts = line.split(',');
-                    if (parts[1]) {
+                    // CSV passwords are deprecated, load from localStorage instead
+                    if (parts[1] && parts[1].trim()) {
                         currentPassword = parts[1].trim();
                     }
-                    if (parts[2]) {
+                    if (parts[2] && parts[2].trim()) {
                         queryPassword = parts[2].trim();
                     }
                     break;
                 }
+            }
+            
+            // Load from secure storage if not in CSV
+            const storedPasswords = loadStoredPasswords();
+            if (!currentPassword && storedPasswords.commentPassword) {
+                currentPassword = storedPasswords.commentPassword;
+            }
+            if (!queryPassword && storedPasswords.queryPassword) {
+                queryPassword = storedPasswords.queryPassword;
             }
         }
 
@@ -709,24 +720,24 @@
         }
 
         function generatePassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let password = '';
-            for (let i = 0; i < 8; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            // Generate high-entropy random hash value (64 characters)
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            const hashArray = Array.from(array);
+            const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             document.getElementById('newPassword').value = password;
         }
 
         function generateQueryPassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let password = '';
-            for (let i = 0; i < 8; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            // Generate high-entropy random hash value (64 characters)
+            const array = new Uint8Array(32);
+            crypto.getRandomValues(array);
+            const hashArray = Array.from(array);
+            const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             document.getElementById('newQueryPassword').value = password;
         }
 
-        function setPassword() {
+        async function setPassword() {
             const newPassword = document.getElementById('newPassword').value;
             
             if (!newPassword || newPassword.trim() === '') {
@@ -734,39 +745,42 @@
                 return;
             }
 
-            // Update CSV data with new password
+            // Store password securely in localStorage instead of CSV
+            await setCommentPassword(newPassword);
+            currentPassword = newPassword;
+            
+            // Update CSV data - keep row structure but remove password value
             const lines = csvData.trim().split('\n');
             
             // Check if password row exists
             let passwordRowFound = false;
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith('密碼,')) {
-                    // Update only the comment password, keep query password if exists
+                    // Keep row structure but clear password value
                     const parts = lines[i].split(',');
                     const existingQueryPassword = parts[2] || '';
-                    lines[i] = '密碼,' + newPassword + (existingQueryPassword ? ',' + existingQueryPassword : '');
+                    lines[i] = '密碼,,' + (existingQueryPassword ? existingQueryPassword : '');
                     passwordRowFound = true;
                     break;
                 }
             }
             
-            // If password row doesn't exist, add it
+            // If password row doesn't exist, add it without password
             if (!passwordRowFound) {
-                lines.push('密碼,' + newPassword);
+                lines.push('密碼,,');
             }
             
             csvData = lines.join('\n');
-            currentPassword = newPassword;
             
             // Create download link
             downloadCSV(csvData);
             
             loadCurrentPassword();
-            showSuccess('銳評密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
+            showSuccess('銳評密碼已更新！密碼已安全儲存（不在 CSV 中）。請下載新的 data.csv 檔案並替換原檔案。');
             document.getElementById('newPassword').value = '';
         }
 
-        function setQueryPassword() {
+        async function setQueryPassword() {
             const newQueryPassword = document.getElementById('newQueryPassword').value;
             
             if (!newQueryPassword || newQueryPassword.trim() === '') {
@@ -774,17 +788,21 @@
                 return;
             }
 
-            // Update CSV data with new query password
+            // Store password securely in localStorage instead of CSV
+            await setQueryPassword(newQueryPassword);
+            queryPassword = newQueryPassword;
+            
+            // Update CSV data - keep row structure but remove password value
             const lines = csvData.trim().split('\n');
             
             // Check if password row exists
             let passwordRowFound = false;
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith('密碼,')) {
-                    // Update query password (third column)
+                    // Keep row structure but clear password value
                     const parts = lines[i].split(',');
                     const existingCommentPassword = parts[1] || '';
-                    lines[i] = '密碼,' + existingCommentPassword + ',' + newQueryPassword;
+                    lines[i] = '密碼,' + (existingCommentPassword ? existingCommentPassword : '') + ',';
                     passwordRowFound = true;
                     break;
                 }
@@ -792,17 +810,16 @@
             
             // If password row doesn't exist, add it
             if (!passwordRowFound) {
-                lines.push('密碼,,' + newQueryPassword);
+                lines.push('密碼,,');
             }
             
             csvData = lines.join('\n');
-            queryPassword = newQueryPassword;
             
             // Create download link
             downloadCSV(csvData);
             
             loadCurrentPassword();
-            showSuccess('查詢密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
+            showSuccess('查詢密碼已更新！密碼已安全儲存（不在 CSV 中）。請下載新的 data.csv 檔案並替換原檔案。');
             document.getElementById('newQueryPassword').value = '';
         }
 
