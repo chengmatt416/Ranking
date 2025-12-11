@@ -1315,8 +1315,7 @@
             const highSecPassword = await getPasswordInHighSecurityMode('query');
             if (highSecPassword && highSecPassword === queryPassword) {
                 // Within high-security no-auth period, allow query directly
-                displayRatingResult(seatNumber);
-                showSuccess('查詢成功！（高機密模式：免驗證時限內）');
+                await displayRatingResult(seatNumber);
                 return;
             }
 
@@ -1327,7 +1326,7 @@
                 return;
             }
 
-            displayRatingResult(seatNumber);
+            await displayRatingResult(seatNumber);
         }
 
         async function queryWithPassword() {
@@ -1341,8 +1340,7 @@
                     return;
                 }
                 
-                displayRatingResult(seatNumber);
-                showSuccess('查詢成功！（高機密模式：免驗證時限內）');
+                await displayRatingResult(seatNumber);
                 return;
             }
             
@@ -1368,7 +1366,7 @@
                 const savedPasscode = getPasscode('query');
                 if (savedPasscode && inputPassword === savedPasscode) {
                     // Passcode correct, allow query
-                    displayRatingResult(seatNumber);
+                    await displayRatingResult(seatNumber);
                     document.getElementById('queryPasswordInput').value = '';
                     return;
                 }
@@ -1377,7 +1375,7 @@
                 const sharedPassword = await getSharedPassword('query', inputPassword);
                 if (sharedPassword && sharedPassword === queryPassword) {
                     // Shared password correct, allow query
-                    displayRatingResult(seatNumber);
+                    await displayRatingResult(seatNumber);
                     document.getElementById('queryPasswordInput').value = '';
                     return;
                 }
@@ -1390,7 +1388,7 @@
             }
 
             // Password correct, allow query
-            displayRatingResult(seatNumber);
+            await displayRatingResult(seatNumber);
             document.getElementById('queryPasswordInput').value = '';
             
             // Ask user if they want to set up a passcode
@@ -1417,7 +1415,9 @@
             
             // Check if in high security mode with comment password - if so, show comment directly
             const highSecPassword = await getPasswordInHighSecurityMode('comment');
-            if (highSecPassword && highSecPassword === currentPassword) {
+            const isHighSecurityMode = highSecPassword && highSecPassword === currentPassword;
+            
+            if (isHighSecurityMode) {
                 // Within high-security no-auth period, show comment directly without password input
                 document.getElementById('passwordSection').style.display = 'none';
                 
@@ -1425,14 +1425,17 @@
                     document.getElementById('commentText').textContent = data.comment;
                     document.getElementById('commentSection').classList.remove('hidden');
                 }
+                
+                hideMessages();
+                showSuccess('查詢成功！銳評已顯示（高機密模式：免驗證時限內）');
             } else {
                 // Show password section for non-high-security mode or when not in no-auth period
                 document.getElementById('passwordSection').style.display = 'block';
                 document.getElementById('commentSection').classList.add('hidden');
+                
+                hideMessages();
+                showSuccess('查詢成功！');
             }
-            
-            hideMessages();
-            showSuccess('查詢成功！');
         }
 
         async function viewComment() {
