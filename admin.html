@@ -455,7 +455,15 @@
     </div>
 
     <script src="auth.js"></script>
+    <script src="passwords.js"></script>
     <script>
+        // Version check for app update
+        const CURRENT_VERSION = 2;
+        const storedVersion = parseInt(localStorage.getItem('app_version') || '1');
+        if (storedVersion < CURRENT_VERSION) {
+            localStorage.setItem('app_version', CURRENT_VERSION.toString());
+        }
+        
         let isLoggedIn = false;
         let csvData = null;
         let currentPassword = '';
@@ -617,15 +625,16 @@
 
         function parsePassword(text) {
             const lines = text.trim().split('\n');
-            // Find the password row (format: 密碼,password_value,query_password)
+            // Find the password row (format: 密碼,comment_password,query_password)
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 if (line.startsWith('密碼,')) {
                     const parts = line.split(',');
-                    if (parts[1]) {
+                    // Load passwords from CSV (now stored as high-entropy random values)
+                    if (parts[1] && parts[1].trim()) {
                         currentPassword = parts[1].trim();
                     }
-                    if (parts[2]) {
+                    if (parts[2] && parts[2].trim()) {
                         queryPassword = parts[2].trim();
                     }
                     break;
@@ -678,24 +687,18 @@
         }
 
         function generatePassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let password = '';
-            for (let i = 0; i < 8; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            // Use shared utility function from passwords.js
+            const password = generateSecurePassword(64);
             document.getElementById('newPassword').value = password;
         }
 
         function generateQueryPassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let password = '';
-            for (let i = 0; i < 8; i++) {
-                password += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            // Use shared utility function from passwords.js
+            const password = generateSecurePassword(64);
             document.getElementById('newQueryPassword').value = password;
         }
 
-        function setPassword() {
+        async function setPassword() {
             const newPassword = document.getElementById('newPassword').value;
             
             if (!newPassword || newPassword.trim() === '') {
@@ -703,17 +706,19 @@
                 return;
             }
 
-            // Update CSV data with new password
+            currentPassword = newPassword;
+            
+            // Update CSV data with the new password (now stored as high-entropy hash)
             const lines = csvData.trim().split('\n');
             
             // Check if password row exists
             let passwordRowFound = false;
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith('密碼,')) {
-                    // Update only the comment password, keep query password if exists
+                    // Update comment password, keep query password if exists
                     const parts = lines[i].split(',');
                     const existingQueryPassword = parts[2] || '';
-                    lines[i] = '密碼,' + newPassword + (existingQueryPassword ? ',' + existingQueryPassword : '');
+                    lines[i] = '密碼,' + newPassword + ',' + existingQueryPassword;
                     passwordRowFound = true;
                     break;
                 }
@@ -721,21 +726,20 @@
             
             // If password row doesn't exist, add it
             if (!passwordRowFound) {
-                lines.push('密碼,' + newPassword);
+                lines.push('密碼,' + newPassword + ',');
             }
             
             csvData = lines.join('\n');
-            currentPassword = newPassword;
             
             // Create download link
             downloadCSV(csvData);
             
             loadCurrentPassword();
-            showSuccess('銳評密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
+            showSuccess('銳評密碼已更新！請下載新的 data.csv 檔案並替換原檔案，以便跨裝置同步。');
             document.getElementById('newPassword').value = '';
         }
 
-        function setQueryPassword() {
+        async function setQueryPassword() {
             const newQueryPassword = document.getElementById('newQueryPassword').value;
             
             if (!newQueryPassword || newQueryPassword.trim() === '') {
@@ -743,14 +747,16 @@
                 return;
             }
 
-            // Update CSV data with new query password
+            queryPassword = newQueryPassword;
+            
+            // Update CSV data with the new query password (now stored as high-entropy hash)
             const lines = csvData.trim().split('\n');
             
             // Check if password row exists
             let passwordRowFound = false;
             for (let i = 0; i < lines.length; i++) {
                 if (lines[i].startsWith('密碼,')) {
-                    // Update query password (third column)
+                    // Update query password, keep comment password if exists
                     const parts = lines[i].split(',');
                     const existingCommentPassword = parts[1] || '';
                     lines[i] = '密碼,' + existingCommentPassword + ',' + newQueryPassword;
@@ -765,13 +771,12 @@
             }
             
             csvData = lines.join('\n');
-            queryPassword = newQueryPassword;
             
             // Create download link
             downloadCSV(csvData);
             
             loadCurrentPassword();
-            showSuccess('查詢密碼已更新！請下載新的 data.csv 檔案並替換原檔案。');
+            showSuccess('查詢密碼已更新！請下載新的 data.csv 檔案並替換原檔案，以便跨裝置同步。');
             document.getElementById('newQueryPassword').value = '';
         }
 

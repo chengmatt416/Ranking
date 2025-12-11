@@ -323,11 +323,26 @@
                         <label style="font-size: 0.9em;">座號</label>
                         <input type="number" id="seatNumber" min="1" max="50" placeholder="填寫者/編輯者座號">
                     </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>有效期限設定（精確到分鐘）：</label>
+                <div class="config-grid" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
                     <div>
-                        <label style="font-size: 0.9em;">有效天數</label>
-                        <input type="number" id="validDays" value="7" min="1" max="365">
+                        <label style="font-size: 0.9em;">天數</label>
+                        <input type="number" id="validDays" value="7" min="0" max="365">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.9em;">小時</label>
+                        <input type="number" id="validHours" value="0" min="0" max="23">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.9em;">分鐘</label>
+                        <input type="number" id="validMinutes" value="0" min="0" max="59">
                     </div>
                 </div>
+                <p style="font-size: 0.85em; color: #666; margin-top: 8px;">至少需要設定一個非零值</p>
             </div>
 
             <button class="generate-btn" onclick="generateShareLink()">生成分享連結</button>
@@ -349,7 +364,7 @@
                 <p>
                     <strong>分享流程：</strong><br>
                     1. 選擇啟用碼類型（問卷或銳評編輯）<br>
-                    2. 輸入座號和有效天數<br>
+                    2. 輸入座號和有效期限（天/小時/分鐘）<br>
                     3. 生成分享連結和 QR Code<br>
                     4. 將連結或 QR Code 分享給使用者<br>
                     5. 使用者點擊連結可直接跳轉並自動填入啟用碼<br><br>
@@ -397,15 +412,22 @@
         async function generateShareLink() {
             const codeType = document.querySelector('input[name="codeType"]:checked').value;
             const seatNumber = document.getElementById('seatNumber').value;
-            const validDays = parseInt(document.getElementById('validDays').value) || 7;
+            const validDays = parseInt(document.getElementById('validDays').value) || 0;
+            const validHours = parseInt(document.getElementById('validHours').value) || 0;
+            const validMinutes = parseInt(document.getElementById('validMinutes').value) || 0;
             
             if (!seatNumber) {
                 showShareError('請輸入座號！');
                 return;
             }
+            
+            if (validDays === 0 && validHours === 0 && validMinutes === 0) {
+                showShareError('請至少設定一個有效期限值（天/小時/分鐘）！');
+                return;
+            }
 
             // Generate activation code
-            const activationCode = generateActivationCode(codeType, seatNumber, validDays);
+            const activationCode = generateActivationCode(codeType, seatNumber, validDays, validHours, validMinutes);
             
             // Determine target page based on code type
             const targetPage = codeType === 'survey' ? 'survey.html' : 'comment-editor.html';
@@ -424,10 +446,12 @@
             showSuccess('分享連結已生成！');
         }
 
-        function generateActivationCode(type, seatNumber, validDays) {
-            // Calculate expiry timestamp
+        function generateActivationCode(type, seatNumber, validDays, validHours, validMinutes) {
+            // Calculate expiry timestamp with minute precision
             const expiryDate = new Date();
             expiryDate.setDate(expiryDate.getDate() + validDays);
+            expiryDate.setHours(expiryDate.getHours() + validHours);
+            expiryDate.setMinutes(expiryDate.getMinutes() + validMinutes);
             const expiryTimestamp = expiryDate.getTime();
             
             // Create code based on type
