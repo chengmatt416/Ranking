@@ -971,12 +971,31 @@
                     const hasPassword = localStorage.getItem('shared_' + type + '_password');
                     if (!hasPassword) continue;
                     
-                    // Check expiry for this specific share and type
+                    // For high-security mode, we need to check the noAuthDuration
+                    // The duration is stored as part of the share but we can't easily retrieve it
+                    // Instead, we use a conservative approach: check if passcode_expiry exists
+                    // If it doesn't exist, this was a high-security direct save
                     const expiryKey = 'passcode_expiry_' + type + '_' + shareId;
                     const expiryTime = parseInt(localStorage.getItem(expiryKey) || '0');
                     
-                    if (expiryTime > 0 && Date.now() < expiryTime) {
-                        // Still within no-auth period for this share
+                    // If expiryTime is 0, this means it was saved via savePasswordsDirectly
+                    // in high-security mode. We need to calculate expiry from activation time.
+                    // However, we don't have noAuthDuration stored. 
+                    // Solution: Store noAuthDuration when saving in password-receive.html
+                    // For now, we check if the activation was recent (within a reasonable window)
+                    
+                    // Check if there's a stored duration for this share
+                    const durationKey = 'share_noauth_duration_' + shareId;
+                    const storedDuration = parseInt(localStorage.getItem(durationKey) || '0');
+                    
+                    if (storedDuration > 0) {
+                        const elapsed = Date.now() - activationTime;
+                        if (elapsed < storedDuration) {
+                            // Still within no-auth period for this share
+                            return true;
+                        }
+                    } else if (expiryTime > 0 && Date.now() < expiryTime) {
+                        // Legacy check: if expiry time is set (for non-high-security shares)
                         return true;
                     }
                 }
