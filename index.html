@@ -681,6 +681,18 @@
                     <button onclick="viewComment()">查看銳評</button>
                 </div>
             </div>
+            
+            <!-- Activation Code Input for devices without camera (PWA only) -->
+            <div class="password-section" id="activationCodeSection" style="display: none;">
+                <div class="input-group">
+                    <label for="activationCodeInput">🔑 啟用碼輸入（無攝影機裝置）：</label>
+                    <input type="text" id="activationCodeInput" placeholder="貼上啟用碼">
+                    <button onclick="applyActivationCode()">使用啟用碼</button>
+                </div>
+                <div style="font-size: 0.85em; color: #666; margin-top: 10px; text-align: center;">
+                    此功能為無攝影機裝置提供，請向管理員索取啟用碼
+                </div>
+            </div>
         </div>
 
         <div class="error-message" id="errorMessage"></div>
@@ -1452,8 +1464,83 @@
             document.getElementById('successMessage').style.display = 'none';
         }
 
+        // Check if running as installed PWA
+        // Note: PWA detection has limitations and can have false positives/negatives
+        // - display-mode check works on most modern browsers
+        // - iOS standalone check covers Safari
+        // - Android TWA check is less reliable and could potentially be spoofed
+        // This is a client-side check and should not be relied upon for critical security
+        function isInstalledPWA() {
+            // Check if running in standalone mode (iOS/Android)
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                return true;
+            }
+            // Check iOS standalone
+            if (window.navigator.standalone === true) {
+                return true;
+            }
+            // Check Android TWA or related (less reliable, document for security awareness)
+            // This check has limitations and is included for broader compatibility
+            if (document.referrer.includes('android-app://')) {
+                return true;
+            }
+            return false;
+        }
+
+        // Initialize PWA-specific features
+        function initPWAFeatures() {
+            const isPWA = isInstalledPWA();
+            const qrScanButton = document.getElementById('qrScanButton');
+            const activationCodeSection = document.getElementById('activationCodeSection');
+            
+            if (isPWA) {
+                // Show QR scanner button and activation code input in PWA mode
+                qrScanButton.style.display = 'flex';
+                activationCodeSection.style.display = 'block';
+            } else {
+                // Hide QR scanner button and activation code input in browser mode
+                qrScanButton.style.display = 'none';
+                activationCodeSection.style.display = 'none';
+            }
+        }
+
+        // Apply activation code (for devices without camera)
+        function applyActivationCode() {
+            const activationCode = document.getElementById('activationCodeInput').value.trim();
+            
+            if (!activationCode) {
+                showError('請輸入啟用碼！');
+                return;
+            }
+            
+            try {
+                // Parse activation code (base64 encoded URL)
+                const decodedUrl = atob(activationCode);
+                const url = new URL(decodedUrl);
+                
+                // Validate that it's from the same origin
+                const currentOrigin = window.location.origin;
+                if (url.origin === currentOrigin && url.pathname.endsWith('password-receive.html')) {
+                    showSuccess('✅ 啟用碼有效！正在開啟...');
+                    
+                    // Navigate to the password-receive page
+                    setTimeout(() => {
+                        window.location.href = url.href;
+                    }, 500);
+                } else {
+                    showError('無效的啟用碼！請檢查是否正確。');
+                }
+            } catch (error) {
+                console.error('Activation code error:', error);
+                showError('無效的啟用碼格式！請向管理員索取正確的啟用碼。');
+            }
+        }
+
         // Load data on page load
-        window.addEventListener('DOMContentLoaded', loadData);
+        window.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            initPWAFeatures();
+        });
 
         // PWA Install functionality
         let deferredPrompt;
@@ -1538,10 +1625,17 @@
                     return;
                 }
 
-                // Request camera permission
-                const stream = await navigator.mediaDevices.getUserMedia({
+                // Request camera permission with 10 second timeout
+                const cameraPermissionTimeout = 10000; // 10 seconds
+                const cameraPromise = navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment' } // Use back camera on mobile
                 });
+                
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Camera permission timeout')), cameraPermissionTimeout);
+                });
+                
+                const stream = await Promise.race([cameraPromise, timeoutPromise]);
                 
                 video.srcObject = stream;
                 video.setAttribute('playsinline', true);
@@ -1552,7 +1646,11 @@
                 
             } catch (error) {
                 console.error('Camera error:', error);
-                showError('無法存取相機！請確認已授予相機權限。');
+                if (error.message === 'Camera permission timeout') {
+                    showError('無法在 10 秒內取得相機權限。請檢查權限設定或使用啟用碼輸入方式。');
+                } else {
+                    showError('無法存取相機！請確認已授予相機權限，或使用啟用碼輸入方式。');
+                }
                 closeQRScanner();
             }
         }
