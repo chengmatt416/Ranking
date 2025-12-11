@@ -24,5 +24,12 @@
   ],
   "categories": ["education", "productivity"],
   "lang": "zh-TW",
-  "dir": "ltr"
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "protocol_handlers": [
+    {
+      "protocol": "web+ranking",
+      "url": "/password-receive.html?data=%s"
+    }
+  ]
 }

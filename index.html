@@ -482,9 +482,137 @@
                 border-radius: 15px;
             }
         }
+
+        /* QR Code Scanner Modal */
+        .qr-scanner-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .qr-scanner-modal.active {
+            display: flex;
+        }
+
+        .qr-scanner-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .qr-scanner-content h2 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        #qr-video {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 10px;
+            background: #000;
+        }
+
+        .qr-scanner-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #0c5460;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .qr-scanner-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .qr-scanner-actions button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1em;
+        }
+
+        .qr-scanner-actions button.cancel {
+            background: #6c757d;
+        }
+
+        .qr-scanner-actions button.cancel:hover {
+            background: #5a6268;
+        }
+
+        .qr-scan-button {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            font-size: 1.8em;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: transform 0.2s;
+            z-index: 998;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qr-scan-button:hover {
+            transform: scale(1.1);
+        }
+
+        .qr-scan-button:active {
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 600px) {
+            .qr-scan-button {
+                bottom: 80px;
+                right: 15px;
+                width: 56px;
+                height: 56px;
+                font-size: 1.6em;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- QR Code Scanner Button -->
+    <button class="qr-scan-button" id="qrScanButton" title="掃描 QR Code">📷</button>
+
+    <!-- QR Code Scanner Modal -->
+    <div class="qr-scanner-modal" id="qrScannerModal">
+        <div class="qr-scanner-content">
+            <h2>📷 掃描分享 QR Code</h2>
+            <div class="qr-scanner-info">
+                將相機對準分享的 QR Code
+            </div>
+            <video id="qr-video" playsinline></video>
+            <div class="qr-scanner-actions">
+                <button class="cancel" onclick="closeQRScanner()">關閉</button>
+            </div>
+        </div>
+    </div>
+
     <!-- PWA Install Banner -->
     <div class="install-banner" id="installBanner">
         <div class="install-banner-text">
@@ -1387,6 +1515,111 @@
                     });
             });
         }
+
+        // ===== QR Code Scanner =====
+        let qrScanner = null;
+        let qrScannerActive = false;
+
+        // Initialize QR scanner button
+        document.getElementById('qrScanButton').addEventListener('click', openQRScanner);
+
+        async function openQRScanner() {
+            const modal = document.getElementById('qrScannerModal');
+            const video = document.getElementById('qr-video');
+            
+            modal.classList.add('active');
+            qrScannerActive = true;
+            
+            try {
+                // Check if getUserMedia is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showError('您的瀏覽器不支援相機功能！');
+                    closeQRScanner();
+                    return;
+                }
+
+                // Request camera permission
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' } // Use back camera on mobile
+                });
+                
+                video.srcObject = stream;
+                video.setAttribute('playsinline', true);
+                await video.play();
+                
+                // Start scanning
+                startQRScanning(video);
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                showError('無法存取相機！請確認已授予相機權限。');
+                closeQRScanner();
+            }
+        }
+
+        function startQRScanning(video) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            function scan() {
+                if (!qrScannerActive) return;
+                
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'dontInvert',
+                    });
+                    
+                    if (code && code.data) {
+                        handleQRCode(code.data);
+                        return;
+                    }
+                }
+                
+                requestAnimationFrame(scan);
+            }
+            
+            scan();
+        }
+
+        function handleQRCode(data) {
+            console.log('QR Code detected:', data);
+            
+            // Check if it's a password-receive URL
+            if (data.includes('password-receive.html')) {
+                closeQRScanner();
+                showSuccess('✅ 檢測到分享連結！正在開啟...');
+                
+                // Open the URL in the app
+                setTimeout(() => {
+                    window.location.href = data;
+                }, 500);
+            } else {
+                showError('這不是有效的密碼分享 QR Code！');
+            }
+        }
+
+        function closeQRScanner() {
+            const modal = document.getElementById('qrScannerModal');
+            const video = document.getElementById('qr-video');
+            
+            qrScannerActive = false;
+            
+            // Stop video stream
+            if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            modal.classList.remove('active');
+        }
     </script>
+    <!-- QR Code Scanner Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </body>
 </html>
