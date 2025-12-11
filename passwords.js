@@ -1,8 +1,8 @@
 // Secure password storage module for the Ranking system
 // Passwords are stored in CSV as high-entropy random values for cross-device sync
 
-// Generate random high-digit hash values for passwords (64 characters)
-async function generateSecurePassword(length = 64) {
+// Generate random high-entropy hex strings for passwords (64 characters)
+function generateSecurePassword(length = 64) {
     const array = new Uint8Array(length / 2);
     crypto.getRandomValues(array);
     const hashArray = Array.from(array);

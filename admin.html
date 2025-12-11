@@ -718,20 +718,14 @@
         }
 
         function generatePassword() {
-            // Generate high-entropy random hash value (64 characters)
-            const array = new Uint8Array(32);
-            crypto.getRandomValues(array);
-            const hashArray = Array.from(array);
-            const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            // Use shared utility function from passwords.js
+            const password = generateSecurePassword(64);
             document.getElementById('newPassword').value = password;
         }
 
         function generateQueryPassword() {
-            // Generate high-entropy random hash value (64 characters)
-            const array = new Uint8Array(32);
-            crypto.getRandomValues(array);
-            const hashArray = Array.from(array);
-            const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            // Use shared utility function from passwords.js
+            const password = generateSecurePassword(64);
             document.getElementById('newQueryPassword').value = password;
         }
 
