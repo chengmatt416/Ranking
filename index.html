@@ -1627,15 +1627,20 @@
 
                 // Request camera permission with 10 second timeout
                 const cameraPermissionTimeout = 10000; // 10 seconds
+                let timeoutId;
+                
                 const cameraPromise = navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment' } // Use back camera on mobile
                 });
                 
                 const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Camera permission timeout')), cameraPermissionTimeout);
+                    timeoutId = setTimeout(() => reject(new Error('Camera permission timeout')), cameraPermissionTimeout);
                 });
                 
                 const stream = await Promise.race([cameraPromise, timeoutPromise]);
+                
+                // Clear timeout if camera permission was granted
+                clearTimeout(timeoutId);
                 
                 video.srcObject = stream;
                 video.setAttribute('playsinline', true);
