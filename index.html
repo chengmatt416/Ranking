@@ -1560,23 +1560,30 @@
         function startQRScanning(video) {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
+            let lastScanTime = 0;
+            const scanInterval = 250; // Scan every 250ms to reduce CPU usage
             
             function scan() {
                 if (!qrScannerActive) return;
                 
-                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                    canvas.height = video.videoHeight;
-                    canvas.width = video.videoWidth;
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const now = Date.now();
+                if (now - lastScanTime >= scanInterval) {
+                    lastScanTime = now;
                     
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: 'dontInvert',
-                    });
-                    
-                    if (code && code.data) {
-                        handleQRCode(code.data);
-                        return;
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        canvas.height = video.videoHeight;
+                        canvas.width = video.videoWidth;
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                            inversionAttempts: 'dontInvert',
+                        });
+                        
+                        if (code && code.data) {
+                            handleQRCode(code.data);
+                            return;
+                        }
                     }
                 }
                 
@@ -1589,17 +1596,26 @@
         function handleQRCode(data) {
             console.log('QR Code detected:', data);
             
-            // Check if it's a password-receive URL
-            if (data.includes('password-receive.html')) {
-                closeQRScanner();
-                showSuccess('✅ 檢測到分享連結！正在開啟...');
+            try {
+                // Validate that it's a valid URL
+                const url = new URL(data);
                 
-                // Open the URL in the app
-                setTimeout(() => {
-                    window.location.href = data;
-                }, 500);
-            } else {
-                showError('這不是有效的密碼分享 QR Code！');
+                // Check if it's from the same origin and is a password-receive URL
+                const currentOrigin = window.location.origin;
+                if (url.origin === currentOrigin && url.pathname.endsWith('password-receive.html')) {
+                    closeQRScanner();
+                    showSuccess('✅ 檢測到分享連結！正在開啟...');
+                    
+                    // Safe to navigate - same origin and correct page
+                    setTimeout(() => {
+                        window.location.href = url.href;
+                    }, 500);
+                } else {
+                    showError('這不是有效的密碼分享 QR Code！');
+                }
+            } catch (error) {
+                // Invalid URL
+                showError('這不是有效的 QR Code 連結！');
             }
         }
 
